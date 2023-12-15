@@ -39,4 +39,3 @@ exports.carmiMysql = db_1.sequelizeExample.define('carmi', {
     freezeTableName: true
 });
 exports.default = exports.carmiMysql;
-//# sourceMappingURL=mysql.js.map

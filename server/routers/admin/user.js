@@ -81,4 +81,3 @@ router.put('/user', async function (req, res, next) {
     res.json((0, utils_1.httpBody)(0, editRes));
 });
 exports.default = router;
-//# sourceMappingURL=user.js.map

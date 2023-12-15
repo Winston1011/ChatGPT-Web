@@ -60,4 +60,3 @@ exports.orderMysql = db_1.sequelizeExample.define('order', {
     freezeTableName: true
 });
 exports.default = exports.orderMysql;
-//# sourceMappingURL=mysql.js.map

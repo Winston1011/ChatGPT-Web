@@ -33,4 +33,3 @@ exports.default = {
     addNotification,
     editNotification
 };
-//# sourceMappingURL=index.js.map

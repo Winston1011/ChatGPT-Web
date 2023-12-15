@@ -13,4 +13,3 @@ function generateUUID() {
     return uuid;
 }
 exports.default = generateUUID;
-//# sourceMappingURL=generateUUID.js.map

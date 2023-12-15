@@ -78,4 +78,3 @@ router.post('/token/check', async function (req, res, next) {
     res.json((0, utils_1.httpBody)(0, rese));
 });
 exports.default = router;
-//# sourceMappingURL=token.js.map

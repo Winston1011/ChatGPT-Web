@@ -7,4 +7,3 @@ function filterObjectNull(obj) {
     return { ...params };
 }
 exports.default = filterObjectNull;
-//# sourceMappingURL=filterObjectNull.js.map

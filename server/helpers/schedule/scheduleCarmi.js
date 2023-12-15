@@ -7,4 +7,3 @@ async function scheduleCarmi() {
     models_1.carmiModel.checkCarmiEndTime(time);
 }
 exports.default = scheduleCarmi;
-//# sourceMappingURL=scheduleCarmi.js.map

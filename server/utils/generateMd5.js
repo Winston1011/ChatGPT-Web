@@ -9,4 +9,3 @@ function generateMd5(str) {
 }
 
 exports.default = generateMd5;
-//# sourceMappingURL=generateMd5.js.map

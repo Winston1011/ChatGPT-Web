@@ -8,4 +8,3 @@ function buildQueryString(params) {
         .join('&');
 }
 exports.default = buildQueryString;
-//# sourceMappingURL=buildQueryString.js.map

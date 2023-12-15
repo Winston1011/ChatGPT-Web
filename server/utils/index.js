@@ -32,4 +32,3 @@ const buildQueryString_1 = tslib_1.__importDefault(require("./buildQueryString")
 exports.buildQueryString = buildQueryString_1.default;
 const generatePayMd5_1 = tslib_1.__importDefault(require("./generatePayMd5"));
 exports.generatePayMd5 = generatePayMd5_1.default;
-//# sourceMappingURL=index.js.map

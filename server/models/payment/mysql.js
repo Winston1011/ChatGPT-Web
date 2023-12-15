@@ -30,4 +30,3 @@ exports.paymentMysql = db_1.sequelizeExample.define('payment', {
     freezeTableName: true
 });
 exports.default = exports.paymentMysql;
-//# sourceMappingURL=mysql.js.map

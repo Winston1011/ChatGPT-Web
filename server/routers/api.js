@@ -1218,4 +1218,3 @@ router.all('/pay/notify', async (req, res, next) => {
     res.json('success');
 });
 exports.default = router;
-//# sourceMappingURL=api.js.map

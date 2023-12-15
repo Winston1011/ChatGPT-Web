@@ -24,4 +24,3 @@ exports.roomMysql = db_1.sequelizeExample.define('room', {
     freezeTableName: true
 });
 exports.default = exports.roomMysql;
-//# sourceMappingURL=mysql.js.map

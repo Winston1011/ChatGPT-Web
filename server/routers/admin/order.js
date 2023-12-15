@@ -14,4 +14,3 @@ router.get('/orders', async function (req, res, next) {
     res.json((0, utils_1.httpBody)(0, all));
 });
 exports.default = router;
-//# sourceMappingURL=order.js.map

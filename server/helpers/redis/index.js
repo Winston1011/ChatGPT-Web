@@ -65,4 +65,3 @@ class Redis {
 	}
 }
 exports.default = new Redis(ioredis);
-//# sourceMappingURL=index.js.map

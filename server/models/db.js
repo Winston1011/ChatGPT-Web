@@ -29,4 +29,3 @@ const initDB = async () => {
     await initMysql();
 };
 exports.default = initDB;
-//# sourceMappingURL=db.js.map

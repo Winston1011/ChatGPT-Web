@@ -142,4 +142,3 @@ exports.default = {
     editUserInfo,
     getUsersNoLimit
 };
-//# sourceMappingURL=index.js.map

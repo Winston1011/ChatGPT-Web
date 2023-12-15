@@ -19,4 +19,3 @@ function httpBody(code, ...rest) {
     return body;
 }
 exports.default = httpBody;
-//# sourceMappingURL=httpBody.js.map

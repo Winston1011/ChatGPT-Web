@@ -74,4 +74,3 @@ exports.default = {
     getPaymentInfo,
     getPaymentTypes
 };
-//# sourceMappingURL=index.js.map

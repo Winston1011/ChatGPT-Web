@@ -70,4 +70,3 @@ exports.default = {
     addCarmis,
     checkCarmiEndTime
 };
-//# sourceMappingURL=index.js.map

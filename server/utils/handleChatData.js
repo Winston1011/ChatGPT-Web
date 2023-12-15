@@ -43,4 +43,3 @@ function handleOpenChatData(chunk, parentMessageId) {
     return contents.join('');
 }
 exports.default = handleOpenChatData;
-//# sourceMappingURL=handleChatData.js.map

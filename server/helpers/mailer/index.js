@@ -32,4 +32,3 @@ exports.default = {
 		return sendMail(sendOptions);
 	}
 };
-//# sourceMappingURL=index.js.map

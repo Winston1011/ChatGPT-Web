@@ -53,4 +53,3 @@ exports.default = {
     getTurnovers,
     editTurnover
 };
-//# sourceMappingURL=index.js.map

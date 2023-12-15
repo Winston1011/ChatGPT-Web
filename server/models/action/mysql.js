@@ -27,4 +27,3 @@ exports.actionMysql = db_1.sequelizeExample.define('action', {
     freezeTableName: true
 });
 exports.default = exports.actionMysql;
-//# sourceMappingURL=mysql.js.map

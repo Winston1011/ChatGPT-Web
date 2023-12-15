@@ -14,4 +14,4 @@ async function scheduleToken() {
 	});
 }
 exports.default = scheduleToken;
-//# sourceMappingURL=scheduleToken.js.map
+//# =scheduleToken.js.map

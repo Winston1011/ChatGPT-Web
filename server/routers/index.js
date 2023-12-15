@@ -10,4 +10,3 @@ exports.default = (app) => {
     app.use('/api/admin', [...admin_1.default]);
     return app;
 };
-//# sourceMappingURL=index.js.map

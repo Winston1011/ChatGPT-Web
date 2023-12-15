@@ -18,10 +18,7 @@
     "dev:web": "vite",
     "start": "node server/index.js",
     "build": "vite build",
-    "preview": "vite preview",
-    "eslint": "eslint \"src/**/*.{ts,tsx}\"",
-    "eslint:fix": "eslint \"src/**/*.{ts,tsx}\" --fix",
-    "prepare": "husky install"
+    "preview": "vite preview"
   },
   "dependencies": {
     "@ant-design/icons": "^5.0.1",
@@ -84,7 +81,7 @@
     "ping": "^0.4.4",
     "prettier": "^2.8.8",
     "ts-node": "^10.9.1",
-    "typescript": "^5.0.4",
+    "typescript": "^5.1.6",
     "vite": "^4.2.0"
   },
   "main": "index.js",

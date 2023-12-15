@@ -27,4 +27,3 @@ exports.notificationMysql = db_1.sequelizeExample.define('notification', {
     freezeTableName: true
 });
 exports.default = exports.notificationMysql;
-//# sourceMappingURL=mysql.js.map

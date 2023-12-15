@@ -24,4 +24,3 @@ exports.configMysql = db_1.sequelizeExample.define('config', {
     freezeTableName: true
 });
 exports.default = exports.configMysql;
-//# sourceMappingURL=mysql.js.map

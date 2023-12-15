@@ -14,4 +14,3 @@ router.get('/signin', async function (req, res, next) {
     res.json((0, utils_1.httpBody)(0, signins));
 });
 exports.default = router;
-//# sourceMappingURL=signin.js.map

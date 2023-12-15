@@ -37,4 +37,3 @@ router.put('/config', async function (req, res, next) {
     res.json((0, utils_1.httpBody)(editRes.code, '修改成功'));
 });
 exports.default = router;
-//# sourceMappingURL=config.js.map

@@ -16,4 +16,4 @@ function createQueue(queueName) {
     });
 }
 exports.default = createQueue;
-//# sourceMappingURL=function.js.map
+//# =function.js.map

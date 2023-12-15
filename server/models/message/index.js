@@ -75,4 +75,3 @@ exports.default = {
     getAdminMessages,
     delMessages
 };
-//# sourceMappingURL=index.js.map

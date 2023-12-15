@@ -153,4 +153,3 @@ exports.default = {
     precreate,
     checkNotifySign
 };
-//# sourceMappingURL=index.js.map

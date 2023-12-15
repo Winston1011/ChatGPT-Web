@@ -63,4 +63,3 @@ exports.default = {
     editToken,
     editToken1,
 };
-//# sourceMappingURL=index.js.map

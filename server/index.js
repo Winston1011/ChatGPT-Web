@@ -40,4 +40,3 @@ app.use(catch_error_1.default);
 app.listen(config_1.default.getConfig('port'), () => {
     console.log(`Server is running on port ${config_1.default.getConfig('port')}`);
 });
-//# sourceMappingURL=index.js.map

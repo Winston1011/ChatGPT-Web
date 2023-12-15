@@ -56,4 +56,3 @@ exports.default = {
     getSignins,
     getUserSigninList
 };
-//# sourceMappingURL=index.js.map

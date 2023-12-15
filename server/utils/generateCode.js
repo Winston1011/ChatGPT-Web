@@ -6,4 +6,3 @@ function generateCode(number = 6) {
     return code;
 }
 exports.default = generateCode;
-//# sourceMappingURL=generateCode.js.map

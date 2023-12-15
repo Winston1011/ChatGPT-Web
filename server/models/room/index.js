@@ -45,4 +45,3 @@ exports.default = {
     addRoom,
     getRooms
 };
-//# sourceMappingURL=index.js.map

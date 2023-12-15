@@ -28,4 +28,3 @@ const notification_1 = tslib_1.__importDefault(require("./notification"));
 exports.notificationModel = notification_1.default;
 const room_1 = tslib_1.__importDefault(require("./room"));
 exports.roomModel = room_1.default;
-//# sourceMappingURL=index.js.map

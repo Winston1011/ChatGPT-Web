@@ -44,4 +44,3 @@ exports.default = {
 		return node_schedule_1.default.gracefulShutdown();
 	},
 };
-//# sourceMappingURL=index.js.map

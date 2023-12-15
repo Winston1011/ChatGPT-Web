@@ -42,4 +42,3 @@ function generateSnowflakeId(nodeId, epoch = 1672502400000) {
     };
 }
 exports.default = generateSnowflakeId;
-//# sourceMappingURL=generateNowflakeId.js.map

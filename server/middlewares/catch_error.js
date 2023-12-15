@@ -13,4 +13,4 @@ const catchError = (err, req, res, next) => {
     next(err);
 };
 exports.default = catchError;
-//# sourceMappingURL=catch_error.js.map
+//# =catch_error.js.map

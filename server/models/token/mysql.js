@@ -36,4 +36,3 @@ exports.tokenMysql = db_1.sequelizeExample.define('token', {
     freezeTableName: true
 });
 exports.default = exports.tokenMysql;
-//# sourceMappingURL=mysql.js.map

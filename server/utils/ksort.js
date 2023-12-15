@@ -9,4 +9,3 @@ function ksort(obj) {
     return sortedObj;
 }
 exports.default = ksort;
-//# sourceMappingURL=ksort.js.map

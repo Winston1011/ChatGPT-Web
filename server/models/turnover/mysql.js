@@ -24,4 +24,3 @@ exports.turnoverMysql = db_1.sequelizeExample.define('turnover', {
     freezeTableName: true
 });
 exports.default = exports.turnoverMysql;
-//# sourceMappingURL=mysql.js.map

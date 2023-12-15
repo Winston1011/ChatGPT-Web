@@ -43,4 +43,3 @@ exports.default = {
     editConfigs,
     getKeyConfig
 };
-//# sourceMappingURL=index.js.map

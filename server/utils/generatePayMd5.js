@@ -8,4 +8,3 @@ function generatePayMd5(str) {
 }
 
 exports.default = generatePayMd5;
-//# sourceMappingURL=generatePayMd5.js.map

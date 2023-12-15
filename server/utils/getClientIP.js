@@ -13,4 +13,3 @@ function getClientIP(req) {
     return ip;
 }
 exports.default = getClientIP;
-//# sourceMappingURL=getClientIP.js.map

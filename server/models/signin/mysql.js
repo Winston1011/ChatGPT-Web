@@ -24,4 +24,3 @@ exports.signinMysql = db_1.sequelizeExample.define('signin', {
     freezeTableName: true
 });
 exports.default = exports.signinMysql;
-//# sourceMappingURL=mysql.js.map

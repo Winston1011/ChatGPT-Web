@@ -25,4 +25,3 @@ exports.default = [
     order_1.default,
     notification_1.default
 ];
-//# sourceMappingURL=index.js.map

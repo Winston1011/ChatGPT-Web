@@ -56,4 +56,3 @@ router.put('/payment', async function (req, res, next) {
     res.json((0, utils_1.httpBody)(0, editRes));
 });
 exports.default = router;
-//# sourceMappingURL=payment.js.map

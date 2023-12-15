@@ -15,4 +15,3 @@ function pagingData({ page, page_size }, zero = true) {
     return { page, page_size };
 }
 exports.default = pagingData;
-//# sourceMappingURL=pagingData.js.map

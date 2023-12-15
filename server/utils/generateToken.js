@@ -10,4 +10,3 @@ function generateToken(info, secret = 'chatgpt') {
     return md5;
 }
 exports.default = generateToken;
-//# sourceMappingURL=generateToken.js.map

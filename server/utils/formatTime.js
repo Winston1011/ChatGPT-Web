@@ -21,4 +21,3 @@ function formatTime(fmt = 'yyyy-MM-dd HH:mm:ss', timeDate) {
     return fmt;
 }
 exports.default = formatTime;
-//# sourceMappingURL=formatTime.js.map

@@ -27,4 +27,3 @@ exports.default = {
     addAction,
     getActions
 };
-//# sourceMappingURL=index.js.map

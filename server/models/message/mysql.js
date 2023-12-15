@@ -51,4 +51,3 @@ exports.messageMysql = db_1.sequelizeExample.define('message', {
     freezeTableName: true
 });
 exports.default = exports.messageMysql;
-//# sourceMappingURL=mysql.js.map

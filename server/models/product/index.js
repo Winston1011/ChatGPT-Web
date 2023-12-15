@@ -40,4 +40,3 @@ exports.default = {
     editProduct,
     getProduct
 };
-//# sourceMappingURL=index.js.map
