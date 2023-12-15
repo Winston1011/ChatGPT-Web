@@ -1,7 +1,7 @@
 /* eslint-disable no-prototype-builtins */
 /* eslint-disable no-console */
-import { CommentOutlined, DeleteOutlined } from '@ant-design/icons'
-import { Button, Modal, Popconfirm, Space, Tabs, Select, message } from 'antd'
+import { CommentOutlined, DeleteOutlined , UploadOutlined} from '@ant-design/icons'
+import { Button, Modal, Popconfirm, Space, Tabs, Select, message ,Upload, UploadFile} from 'antd'
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 
 import styles from './index.module.less'
@@ -11,7 +11,7 @@ import RoleLocal from './components/RoleLocal'
 import AllInput from './components/AllInput'
 import ChatMessage from './components/ChatMessage'
 import { ChatGpt, RequestChatOptions } from '@/types'
-import { postChatCompletions } from '@/request/api'
+import { postChatCompletions, postUploadImage } from '@/request/api'
 import Reminder from '@/components/Reminder'
 import { filterObjectNull, formatTime, generateUUID, handleChatData } from '@/utils'
 import { useScroll } from '@/hooks/useScroll'
@@ -46,6 +46,61 @@ function ChatPage() {
     open: false
   })
   const [loading, setLoading] = useState(false);
+
+   // 添加一个状态来保存图片的 URL
+   const [imageURL, setImageURL] = useState('');
+   const [fileList, setFileList] = useState<UploadFile<any>[]>([]);
+
+  const uploadImage = async (file: File) => {
+    try {
+      // 直接传递 file 参数
+      const response = await postUploadImage(file);
+
+      // 在控制台中打印响应结果
+      console.log('上传响应:', response);
+
+      if (response.code === 0 && response.data && response.data.url) {
+        setImageURL(response.data.url); // 使用 response.data.url 访问 URL
+        setFileList([{
+          uid: '-1', // 文件唯一标识
+          name: file.name, // 文件名
+          status: 'done', // 状态有：uploading, done, error, removed
+          url: response.data.url // 下载链接
+        }]);
+        message.success('图片上传成功');
+      } else {
+        message.error('图片上传失败');
+      }
+    } catch (error) {
+      console.error('上传失败:', error);
+      message.error('图片上传异常');
+    }
+  };
+
+  const beforeUpload = (file: File) => {
+    uploadImage(file); // 上传图片
+    return false; // 阻止组件自动上传文件
+  };
+
+
+  const imageUploadSelector = config.model === 'gpt-4-vision-preview' ? (
+    <div className={styles.drawPage_config}>
+      <Space direction="vertical">
+        <Upload
+          beforeUpload={beforeUpload}
+          listType="picture"
+          maxCount={1}
+          fileList={fileList}
+          onChange={({ fileList: newFileList }) => setFileList(newFileList)}
+        >
+          <Button icon={<UploadOutlined />}>选择图片</Button>
+        </Upload>
+      </Space>
+    </div>
+  ) : null;
+
+
+
 
   const handleMenuClick = (r: { key: string }) => {
     const id = r.key.replace('/', '');
@@ -415,6 +470,7 @@ function ChatPage() {
             </div>
           </div>
           <div className={styles.chatPage_container_two}>
+            {imageUploadSelector}
             <AllInput
               disabled={!!fetchController}
               onSend={(value) => {

@@ -140,3 +140,24 @@ export function putUserPassword(params: RequestLoginParams) {
 export function getConfig() {
 	return request.get<ResponseConfigData>('/api/config')
   }
+
+export function postUploadImage(
+  file: File, // 直接接收 File 类型的参数
+  options?: { [key: string]: any }
+) {
+  const reader = new FileReader();
+  return new Promise<{ url: string }>((resolve, reject) => {
+    reader.onloadend = async () => {
+      try {
+        const response = await request.post<{ url: string }>('/api/upload/image', {
+          file: reader.result,
+        }, options);
+        resolve(response);
+      } catch (error) {
+        reject(error);
+      }
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}

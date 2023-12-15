@@ -57,6 +57,10 @@ const configStore = create<ConfigState>()(
           label: 'GPT-4-32K',
           value: 'gpt-4-32k'
         },
+        {
+          label: 'GPT4-V',
+          value: 'gpt-4-vision-preview'
+        },
       ],
       config: {
         model: 'gpt-3.5-turbo',

@@ -4,7 +4,8 @@ import {
   ProFormGroup,
   ProFormList,
   ProFormText,
-  QueryFilter
+  QueryFilter,
+  ProFormSelect,
 } from '@ant-design/pro-components'
 import { Button, Form, Space, Tabs, message } from 'antd'
 import { useEffect, useRef, useState } from 'react'
@@ -31,12 +32,24 @@ function ConfigPage() {
     ai3_16k_ratio: number | string
     ai4_ratio: number | string
     ai4_32k_ratio: number | string
+    ai4_vision_ratio: number | string
   }>()
 
   const [drawUsePriceForm] = Form.useForm<{
     draw_use_price: Array<{
       size: string
       integral: number
+    }>
+  }>()
+
+  const [gosSettingsForm] = Form.useForm<{
+    gos_settings: Array<{
+      imageHostingType: string
+      secretId: string
+      secretKey: string
+      bucketName: string
+      region: string
+      accelerateDomain: string
     }>
   }>()
 
@@ -57,8 +70,10 @@ function ConfigPage() {
     const ai316kRatio = getConfigValue('ai3_16k_ratio', data)
     const ai4Ratio = getConfigValue('ai4_ratio', data)
     const ai432kRatio = getConfigValue('ai4_32k_ratio', data)
+    const ai4VisionRatio = getConfigValue('ai4_vision_ratio', data)
     const drawUsePrice = getConfigValue('draw_use_price', data)
     const invite_reward = getConfigValue('invite_reward', data)
+    const gosSettings = getConfigValue('gos_settings', data)
     rewardForm.setFieldsValue({
       register_reward: registerRewardInfo.value,
       signin_reward: signinRewardInfo.value,
@@ -71,7 +86,8 @@ function ConfigPage() {
       ai3_ratio: Number(ai3Ratio.value),
       ai3_16k_ratio: Number(ai316kRatio.value),
       ai4_ratio: Number(ai4Ratio.value),
-      ai4_32k_ratio: Number(ai432kRatio.value)
+      ai4_32k_ratio: Number(ai432kRatio.value),
+      ai4_vision_ratio:Number(ai4VisionRatio.value)
     })
     if (drawUsePrice && drawUsePrice.value) {
       drawUsePriceForm.setFieldsValue({
@@ -116,7 +132,11 @@ function ConfigPage() {
       inviteIntroduce.current = invite_introduce.value
     }
 
-
+    if (gosSettings && gosSettings.value) {
+      gosSettingsForm.setFieldsValue({
+        gos_settings: JSON.parse(gosSettings.value)
+      })
+    }
 
   }
 
@@ -362,6 +382,13 @@ function ConfigPage() {
               min={0}
               max={100000}
             />
+            <ProFormDigit
+              name="ai4_vision_ratio"
+              label="GPT-4-V"
+              tooltip="每次对话消耗多少积分"
+              min={0}
+              max={100000}
+            />
           </QueryFilter>
         </div>
         <div className={styles.config_form}>
@@ -417,6 +444,84 @@ function ConfigPage() {
             />
               </ProFormGroup>
             </ProFormList>
+          </ProForm>
+        </div>
+        <div className={styles.config_form}>
+          <h3>存储配置</h3>
+          <p>暂时只支持谷歌云 GOS</p>
+          <ProForm
+            form={gosSettingsForm}
+            onFinish={(values) => {
+              values.gos_settings = JSON.stringify(values.gos_settings) as any
+              return onSave(values)
+            }}
+            onReset={() => {
+              onRewardFormSet(configs)
+            }}
+            size="large"
+            requiredMark={false}
+            isKeyPressSubmit={false}
+            submitter={{
+              searchConfig: {
+                submitText: '保存',
+                resetText: '恢复'
+              }
+            }}
+          >
+            <ProFormGroup>
+              <ProFormSelect
+                name={['gos_settings', 'imageHostingType']}
+                label="图床类型"
+                options={[
+                  { value: 'google cloud storage', label: '谷歌云' },
+                ]}
+                rules={[{ required: true, message: '请选择图床类型' }]}
+              />
+              <ProFormText
+                name={['gos_settings', 'secretId']}
+                label="SecretId"
+                rules={[
+                  {
+                    // required: true,
+                    message: '请输入SecretId'
+                  }
+                ]}
+              />
+              <ProFormText.Password
+                name={['gos_settings', 'secretKey']}
+                label="SecretKey"
+                rules={[
+                  {
+                    // required: true,
+                    message: '请输入SecretKey'
+                  }
+                ]}
+              />
+              <ProFormText
+                name={['gos_settings', 'bucketName']}
+                label="存储桶名称"
+                rules={[
+                  {
+                    required: true,
+                    message: '请输入存储桶名称'
+                  }
+                ]}
+              />
+              <ProFormText
+                name={['gos_settings', 'region']}
+                label="所属地域"
+                rules={[
+                  {
+                    // required: true,
+                    message: '请选择所属地域'
+                  }
+                ]}
+              />
+              <ProFormText
+                name={['gos_settings', 'accelerateDomain']}
+                label="全球加速域名"
+              />
+            </ProFormGroup>
           </ProForm>
         </div>
       </Space>

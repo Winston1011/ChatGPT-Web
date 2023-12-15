@@ -15,6 +15,13 @@ const queue_1 = require('../helpers/queue');
 const alipay_1 = tslib_1.__importDefault(require('../helpers/alipay'));
 const yipay_1 = tslib_1.__importDefault(require('../helpers/yipay'));
 const router = express_1.default.Router();
+
+// google cloud storage
+const { Storage } = require('@google-cloud/storage');
+const multer = require('multer');
+const storage = multer.memoryStorage();
+const upload = multer({ storage: storage });
+
 router.get('/config', async (req, res, next) => {
     const shop_introduce = (await models_1.configModel.getKeyConfig('shop_introduce')).value;
     const user_introduce = (await models_1.configModel.getKeyConfig('user_introduce')).value;
@@ -551,11 +558,13 @@ router.post('/chat/completions', async (req, res) => {
         const ai3_16k_ratio = (await models_1.configModel.getKeyConfig('ai3_16k_ratio')).value || 0;
         const ai4_ratio = (await models_1.configModel.getKeyConfig('ai4_ratio')).value || 0;
         const ai4_32k_ratio = (await models_1.configModel.getKeyConfig('ai4_32k_ratio')).value || 0;
+        const ai4_vision_ratio = (await models_1.configModel.getKeyConfig('ai4_vision_ratio')).value || 0;
         const aiRatioInfo = {
             ai3_ratio,
             ai3_16k_ratio,
             ai4_ratio,
-            ai4_32k_ratio
+            ai4_32k_ratio,
+            ai4_vision_ratio
         };
         // 重试的时候 删除此前消息
         if(oldUserMessageId === ''){
@@ -595,6 +604,9 @@ router.post('/chat/completions', async (req, res) => {
                                     let ratio = Number(aiRatioInfo.ai4_ratio);
                                     if(options.model.includes('32k')){
                                         ratio = Number(aiRatioInfo.ai4_32k_ratio);
+                                    }
+                                    if(options.model.includes('vision')){
+                                        ratio = Number(aiRatioInfo.ai4_vision_ratio);
                                     }
                                     models_1.userModel.updataUserVIP({
                                         id: user_id,
@@ -654,6 +666,9 @@ router.post('/chat/completions', async (req, res) => {
                                     let ratio = Number(aiRatioInfo.ai4_ratio);
                                     if(options.model.includes('32k')){
                                         ratio = Number(aiRatioInfo.ai4_32k_ratio);
+                                    }
+                                    if(options.model.includes('vision')){
+                                        ratio = Number(aiRatioInfo.ai4_vision_ratio);
                                     }
                                     models_1.userModel.updataUserVIP({
                                         id: user_id,
@@ -1217,4 +1232,59 @@ router.all('/pay/notify', async (req, res, next) => {
     }
     res.json('success');
 });
+
+// 上传图片
+router.post('/upload/image', upload.single('file'), async (req, res) => {
+    const gosSettingStr = await models_1.configModel.getConfig('gos_settings');
+    // 验证配置存在性
+    if (!gosSettingStr) {
+        return res.status(400).send('上传失败');
+    }
+
+    // 尝试解析配置字符串为对象
+    let gosSetting;
+    try {
+        gosSetting = JSON.parse(gosSettingStr);
+    } catch (error) {
+        return res.status(400).send('上传失败');
+    }
+
+    // 检查配置类型
+    if (gosSetting.imageHostingType !== 'google cloud storage') {
+        return res.status(400).send('上传失败');
+    }
+
+    const fileContent = req.body?.file
+    console.log('fileContent', fileContent)
+    // 检查文件存在性
+    if (!fileContent) {
+        return res.status(400).send('上传失败');
+    }
+
+    /**
+     * TODO(developer): Uncomment the following lines before running the sample.
+     */
+    // The ID of your GCS bucket
+    const bucketName = gosSetting.bucketName;
+
+    // The contents that you want to upload
+    const contents = fileContent;
+
+    // The new ID for your GCS file
+    const destFileName = `images/${Date.now()}-${1111}`;
+
+    // Creates a client
+    const storage = new Storage();
+
+    async function uploadFromMemory() {
+        await storage.bucket(bucketName).file(destFileName).save(contents);
+
+        console.log(
+            `${destFileName} with contents ${contents} uploaded to ${bucketName}.`
+        );
+    }
+
+    uploadFromMemory().catch(console.error);
+});
+
 exports.default = router;
