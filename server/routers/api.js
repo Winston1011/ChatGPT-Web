@@ -16,8 +16,7 @@ const alipay_1 = tslib_1.__importDefault(require('../helpers/alipay'));
 const yipay_1 = tslib_1.__importDefault(require('../helpers/yipay'));
 const router = express_1.default.Router();
 
-// google cloud storage
-const { Storage } = require('@google-cloud/storage');
+const COS = require('cos-nodejs-sdk-v5');
 const multer = require('multer');
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
