@@ -1235,56 +1235,58 @@ router.all('/pay/notify', async (req, res, next) => {
 
 // 上传图片
 router.post('/upload/image', upload.single('file'), async (req, res) => {
-    const gosSettingStr = await models_1.configModel.getConfig('gos_settings');
+    const cosSettingStr = await models_1.configModel.getConfig('cos_settings');
     // 验证配置存在性
-    if (!gosSettingStr) {
+    if (!cosSettingStr) {
         return res.status(400).send('上传失败');
     }
 
     // 尝试解析配置字符串为对象
-    let gosSetting;
+    let cosSetting;
     try {
-        gosSetting = JSON.parse(gosSettingStr);
+        cosSetting = JSON.parse(cosSettingStr);
     } catch (error) {
         return res.status(400).send('上传失败');
     }
 
     // 检查配置类型
-    if (gosSetting.imageHostingType !== 'google cloud storage') {
+    if (cosSetting.imageHostingType !== 'tencent') {
         return res.status(400).send('上传失败');
     }
 
-    const fileContent = req.body?.file
-    console.log('fileContent', fileContent)
     // 检查文件存在性
-    if (!fileContent) {
+    if (!req.file) {
         return res.status(400).send('上传失败');
     }
 
-    /**
-     * TODO(developer): Uncomment the following lines before running the sample.
-     */
-    // The ID of your GCS bucket
-    const bucketName = gosSetting.bucketName;
+    // 获取上传的文件
+    const file = req.file;
 
-    // The contents that you want to upload
-    const contents = fileContent;
+    // 定义上传到 COS 的参数
+    const params = {
+        Bucket: cosSetting.bucketName,
+        Region: cosSetting.region,
+        Key: `images/${Date.now()}-${file.originalname}`,
+        Body: file.buffer,
+        ContentLength: file.size
+    };
 
-    // The new ID for your GCS file
-    const destFileName = `images/${Date.now()}-${1111}`;
+    // 创建 COS 实例
+    const cos = new COS({
+        SecretId: cosSetting.secretId,
+        SecretKey: cosSetting.secretKey
+    });
 
-    // Creates a client
-    const storage = new Storage();
-
-    async function uploadFromMemory() {
-        await storage.bucket(bucketName).file(destFileName).save(contents);
-
-        console.log(
-            `${destFileName} with contents ${contents} uploaded to ${bucketName}.`
-        );
-    }
-
-    uploadFromMemory().catch(console.error);
+    // 上传文件到 COS
+    cos.putObject(params, function (err, data) {
+        if (err) {
+            res.status(400).send('上传失败');
+        } else {
+            // 返回文件的 URL
+            const url = `https://${cosSetting.accelerateDomain}/${params.Key}`;
+            res.json({ code: 0, data: { url }, message: '上传成功' });
+        }
+    });
 });
 
 exports.default = router;

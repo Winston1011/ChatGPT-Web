@@ -42,8 +42,8 @@ function ConfigPage() {
     }>
   }>()
 
-  const [gosSettingsForm] = Form.useForm<{
-    gos_settings: Array<{
+  const [cosSettingsForm] = Form.useForm<{
+    cos_settings: Array<{
       imageHostingType: string
       secretId: string
       secretKey: string
@@ -73,7 +73,7 @@ function ConfigPage() {
     const ai4VisionRatio = getConfigValue('ai4_vision_ratio', data)
     const drawUsePrice = getConfigValue('draw_use_price', data)
     const invite_reward = getConfigValue('invite_reward', data)
-    const gosSettings = getConfigValue('gos_settings', data)
+    const cosSettings = getConfigValue('cos_settings', data)
     rewardForm.setFieldsValue({
       register_reward: registerRewardInfo.value,
       signin_reward: signinRewardInfo.value,
@@ -132,11 +132,12 @@ function ConfigPage() {
       inviteIntroduce.current = invite_introduce.value
     }
 
-    if (gosSettings && gosSettings.value) {
-      gosSettingsForm.setFieldsValue({
-        gos_settings: JSON.parse(gosSettings.value)
+    if (cosSettings && cosSettings.value) {
+      cosSettingsForm.setFieldsValue({
+        cos_settings: JSON.parse(cosSettings.value)
       })
     }
+
 
   }
 
@@ -448,11 +449,11 @@ function ConfigPage() {
         </div>
         <div className={styles.config_form}>
           <h3>存储配置</h3>
-          <p>暂时只支持谷歌云 GOS</p>
+          <p>暂时只支持腾讯云 COS</p>
           <ProForm
-            form={gosSettingsForm}
+            form={cosSettingsForm}
             onFinish={(values) => {
-              values.gos_settings = JSON.stringify(values.gos_settings) as any
+              values.cos_settings = JSON.stringify(values.cos_settings) as any
               return onSave(values)
             }}
             onReset={() => {
@@ -470,35 +471,35 @@ function ConfigPage() {
           >
             <ProFormGroup>
               <ProFormSelect
-                name={['gos_settings', 'imageHostingType']}
+                name={['cos_settings', 'imageHostingType']}
                 label="图床类型"
                 options={[
-                  { value: 'google cloud storage', label: '谷歌云' },
+                  { value: 'tencent', label: '腾讯云' },
                 ]}
                 rules={[{ required: true, message: '请选择图床类型' }]}
               />
               <ProFormText
-                name={['gos_settings', 'secretId']}
+                name={['cos_settings', 'secretId']}
                 label="SecretId"
                 rules={[
                   {
-                    // required: true,
+                    required: true,
                     message: '请输入SecretId'
                   }
                 ]}
               />
               <ProFormText.Password
-                name={['gos_settings', 'secretKey']}
+                name={['cos_settings', 'secretKey']}
                 label="SecretKey"
                 rules={[
                   {
-                    // required: true,
+                    required: true,
                     message: '请输入SecretKey'
                   }
                 ]}
               />
               <ProFormText
-                name={['gos_settings', 'bucketName']}
+                name={['cos_settings', 'bucketName']}
                 label="存储桶名称"
                 rules={[
                   {
@@ -508,17 +509,17 @@ function ConfigPage() {
                 ]}
               />
               <ProFormText
-                name={['gos_settings', 'region']}
+                name={['cos_settings', 'region']}
                 label="所属地域"
                 rules={[
                   {
-                    // required: true,
+                    required: true,
                     message: '请选择所属地域'
                   }
                 ]}
               />
               <ProFormText
-                name={['gos_settings', 'accelerateDomain']}
+                name={['cos_settings', 'accelerateDomain']}
                 label="全球加速域名"
               />
             </ProFormGroup>
