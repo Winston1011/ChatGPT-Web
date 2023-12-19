@@ -51,6 +51,10 @@ export interface ChatGptConfig {
   // limit_message?: number
   // 单次回复限制
   max_tokens?: number
+  // 绘画尺寸
+  size?: string
+  // 上传的文件
+  imageURL?: string;
 }
 
 export interface PromptInfo {
@@ -105,9 +109,12 @@ export interface ChatGpt {
   id: string
   text: string
   dateTime: string
+  isImage?: boolean
+  imageUrl?: string
   status: 'pass' | 'loading' | 'error'
   role: 'assistant' | 'user' | string
   requestOptions: RequestChatOptions
+  uploadedImageUrl?: string
 }
 
 export interface RequestImagesGenerations {
@@ -199,4 +206,8 @@ export interface SigninInfo {
   status: number
   create_time: string
   update_time: string
+}
+
+export interface UoploadResponse {
+  url: string
 }

@@ -14,11 +14,19 @@ function isResponseData<T>(obj: any): obj is ResponseData<T> {
 }
 
 // 判断是否需要基础域名前缀
+//const getBaseUrl = (url: string) => {
+//const baseURL = import.meta.env.VITE_APP_REQUEST_HOST
+//if (/^http(s?):\/\//i.test(url)) return url
+//return baseURL + url
+//}
+
+// 判断是否需要基础域名前缀
 const getBaseUrl = (url: string) => {
   const baseURL = import.meta.env.VITE_APP_REQUEST_HOST;
   if (/^http(s?):\/\//i.test(url)) return url
   return baseURL + url
 }
+
 
 // 对Headers 进行一个变形
 function correctHeaders(
@@ -27,18 +35,17 @@ function correctHeaders(
     'Content-Type'?: string
   } = {}
 ) {
-  if (headers['Content-Type'] === 'multipart/form-data') {
-    delete headers['Content-Type']
-    return headers
-  }
   if ((method === 'GET' || method === 'DELETE') && !headers['Content-Type']) {
-    headers['Content-Type'] = 'application/x-www-form-urlencoded'
+    // 对于 GET 或 DELETE 请求，如果没有设置 Content-Type，则设置为 application/x-www-form-urlencoded
+    headers['Content-Type'] = 'application/x-www-form-urlencoded';
   }
   if ((method === 'POST' || method === 'PUT') && !headers['Content-Type']) {
-    headers['Content-Type'] = 'application/json'
+    // 对于 POST 或 PUT 请求，如果没有设置 Content-Type，则设置为 application/json
+    headers['Content-Type'] = 'application/json';
   }
-  return headers
+  return headers;
 }
+
 
 // 判断是否为Object
 const isPlainObject = (obj: any) => {
@@ -128,7 +135,7 @@ const request = <T>(
     // 请求控制器
     signal,
     ...options,
-    headers: correctHeaders(options?.method, options?.headers)
+    //headers: correctHeaders(options?.method, options?.headers)
   }
 
   // 导入请求拦截器
@@ -190,6 +197,7 @@ const get = <T = unknown>(
   headers?: HeadersInit,
   config?: RequestConfig
 ) => {
+  const correctedHeaders = correctHeaders('get', headers);
   if (params && typeof params !== 'string' && isPlainObject(params)) {
     const tempArray: string[] = []
     for (const item in params) {
@@ -204,7 +212,7 @@ const get = <T = unknown>(
     `${url}${params}`,
     {
       method: 'GET',
-      headers
+      headers: correctedHeaders
     },
     config
   )
@@ -217,14 +225,17 @@ const post = <T = unknown>(
   config?: RequestConfig
 ) => {
   let correctData = data
+  const isFormData = data instanceof FormData;
   if (isPlainObject(data)) {
     correctData = JSON.stringify(data)
   }
+  const correctedHeaders = isFormData ? headers : correctHeaders('POST', headers);
+
   return request<T>(
     url,
     {
       method: 'POST',
-      headers,
+      headers: correctedHeaders,
       body: correctData
     },
     config
@@ -237,20 +248,22 @@ const put = <T = unknown>(
   headers?: HeadersInit,
   config?: RequestConfig
 ) => {
-  let correctData = data
+  let correctData = data;
+  const correctedHeaders = correctHeaders('PUT', headers);
   if (isPlainObject(data)) {
-    correctData = JSON.stringify(data)
+    correctData = JSON.stringify(data);
   }
   return request<T>(
     url,
     {
       method: 'PUT',
-      headers,
+      headers: correctedHeaders,
       body: correctData
     },
     config
-  )
-}
+  );
+};
+
 
 const del = <T = unknown>(
   url: string,

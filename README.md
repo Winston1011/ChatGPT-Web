@@ -86,7 +86,7 @@ yarn start
 VITE_APP_REQUEST_HOST: https://xxx.xxx.xxx
 
 APP 名称&Logo
-VITE_APP_TITLE: ChatWeb
+VITE_APP_TITLE: 小橘助理
 VITE_APP_LOGO: https://image.lightai.io/icon/logo.svg
 
 ## 在根目录下启动

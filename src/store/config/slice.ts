@@ -58,8 +58,12 @@ const configStore = create<ConfigState>()(
           value: 'gpt-4-32k'
         },
         {
-          label: 'GPT4-V',
+          label: '识图',
           value: 'gpt-4-vision-preview'
+        },
+        {
+          label: '画图',
+          value: 'dall-e-3'
         },
       ],
       config: {

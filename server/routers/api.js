@@ -357,7 +357,7 @@ router.post('/chat/completions', async (req, res) => {
         id: user_id
     });
     const ip = (0, utils_1.getClientIP)(req);
-    const { prompt, parentMessageId, selectChatIdStr, userMessageId: oldUserMessageId, assistantMessageId: oldAssistantMessageId } = req.body;
+    const { prompt, parentMessageId, selectChatIdStr, userMessageId: oldUserMessageId, assistantMessageId: oldAssistantMessageId , imageURL} = req.body;
 
     // 取出options值
     const model = req.body.options?.model;   
@@ -380,6 +380,8 @@ router.post('/chat/completions', async (req, res) => {
         ...req.body.options,
         max_tokens: max_tokens_value ?? 2048
     };
+    // 删除size
+    delete options.size;
 
     console.log('chat options', options)
 
@@ -412,7 +414,33 @@ router.post('/chat/completions', async (req, res) => {
         }
     }
 
-    let historyMessages = '';
+    // 首先构建当前消息
+    let currentMessage;
+    let gpt4vFlag = false;
+    if (model === 'gpt-4-vision-preview' && imageURL) {
+        // 当使用 gpt-4-vision-preview 模型时，当前消息包括文本和图片
+        currentMessage = {
+            role: "user",
+            content: [
+                {
+                    type: "text",
+                    text: prompt
+                },
+                {
+                    type: "image_url",
+                    image_url: {
+                        url: imageURL
+                    }
+                }
+            ]
+        };
+        gpt4vFlag = true;
+    } else {
+        // 其他模型时，当前消息只包括文本
+        currentMessage = { role: 'user', content: prompt };
+    }
+
+    // let historyMessages = '';
     // 确保历史消息和新的用户消息不超过限定 token
     let userMessage = prompt;
     let userMessageTokens = new gpt_tokens_1.GPTTokens({
@@ -423,80 +451,99 @@ router.post('/chat/completions', async (req, res) => {
         }]
     });
 
+    // // 如果用户消息的token数量超过最大限制，进行截断处理
+    // if (userMessageTokens.usedTokens > max_tokens_value) {
+    //     let truncatedUserMessage = userMessage;
+    //     let truncatedUserMessageTokens;
 
-    // 如果用户消息的token数量超过最大限制，进行截断处理
-    if (userMessageTokens.usedTokens > max_tokens_value) {
-        let truncatedUserMessage = userMessage;
-        let truncatedUserMessageTokens;
+    //     // 截取用户消息，每次截取后检查token数量
+    //     while (userMessageTokens.usedTokens > max_tokens_value) {
+    //         truncatedUserMessage = truncatedUserMessage.slice(0, truncatedUserMessage.length - 100);
+    //         truncatedUserMessageTokens = new gpt_tokens_1.GPTTokens({
+    //             model: options.model,
+    //             messages: [{
+    //                 role: 'user',
+    //                 content: truncatedUserMessage
+    //             }]
+    //         });
+    //         userMessageTokens = truncatedUserMessageTokens;
+    //     }
 
-        // 截取用户消息，每次截取后检查token数量
-        while (userMessageTokens.usedTokens > max_tokens_value) {
-            truncatedUserMessage = truncatedUserMessage.slice(0, truncatedUserMessage.length - 100);
-            truncatedUserMessageTokens = new gpt_tokens_1.GPTTokens({
-                model: options.model,
-                messages: [{
-                    role: 'user',
-                    content: truncatedUserMessage
-                }]
-            });
-            userMessageTokens = truncatedUserMessageTokens;
-        }
+    //     userMessage = truncatedUserMessage;
+    // }
+    // // 只有在用户消息的token数量未超过最大限制时，才处理历史消息
+    // if (userMessageTokens.usedTokens <= max_tokens_value) {
+    //     const historyMessageCount = (await models_1.configModel.getKeyConfig('history_message_count')).value;
+    //     // 不查询已经删除的message
+    //     const getMessagesData = await models_1.messageModel.getMessages({ page: 0, page_size: Number(historyMessageCount) }, {
+    //         parent_message_id: parentMessageId,
+    //         status : 0,
+    //     });
 
-        userMessage = truncatedUserMessage;
-    }
-    // 只有在用户消息的token数量未超过最大限制时，才处理历史消息
-    if (userMessageTokens.usedTokens <= max_tokens_value) {
-        const historyMessageCount = (await models_1.configModel.getKeyConfig('history_message_count')).value;
-        // 不查询已经删除的message
-        const getMessagesData = await models_1.messageModel.getMessages({ page: 0, page_size: Number(historyMessageCount) }, {
-            parent_message_id: parentMessageId,
-            status : 0,
-        });
+    //     historyMessages = getMessagesData.rows
+    //         .map((item) => {
+    //             return {
+    //                 role: item.toJSON().role,
+    //                 content: item.toJSON().content
+    //             };
+    //         })
+    //         .reverse();
 
-        historyMessages = getMessagesData.rows
-            .map((item) => {
-                return {
-                    role: item.toJSON().role,
-                    content: item.toJSON().content
-                };
-            })
-            .reverse();
+    //     // 创建一个 GPTTokens 对象以计算历史消息的token数量
+    //     const historyMessagesTokens = new gpt_tokens_1.GPTTokens({
+    //         model: options.model,
+    //         messages: historyMessages
+    //     });
 
-        // 创建一个 GPTTokens 对象以计算历史消息的token数量
-        const historyMessagesTokens = new gpt_tokens_1.GPTTokens({
-            model: options.model,
-            messages: historyMessages
-        });
+    //     let total_tokens = historyMessagesTokens.usedTokens;
+    //     total_tokens += userMessageTokens.usedTokens;
 
-        let total_tokens = historyMessagesTokens.usedTokens;
-        total_tokens += userMessageTokens.usedTokens;
+    //     while (total_tokens > max_tokens_value && historyMessages.length > 0) {
+    //         // 移除最早的消息
+    //         const removedMessage = historyMessages.shift();
+    //         // 更新token总数
+    //         const removedMessageTokens = new gpt_tokens_1.GPTTokens({
+    //             model: options.model,
+    //             messages: [removedMessage]
+    //         });
+    //         total_tokens -= removedMessageTokens.usedTokens;
+    //     }
+    // }
+    // // 检查是否存在 "system" 角色的消息
+    // const systemMessageExists = historyMessages.some(message => message.role === 'system');
 
-        while (total_tokens > max_tokens_value && historyMessages.length > 0) {
-            // 移除最早的消息
-            const removedMessage = historyMessages.shift();
-            // 更新token总数
-            const removedMessageTokens = new gpt_tokens_1.GPTTokens({
-                model: options.model,
-                messages: [removedMessage]
-            });
-            total_tokens -= removedMessageTokens.usedTokens;
-        }
-    }
-    // 检查是否存在 "system" 角色的消息
-    const systemMessageExists = historyMessages.some(message => message.role === 'system');
+    // // 如果不存在 "system" 角色的消息，那么在数组开头添加一条
+    // if (!systemMessageExists) {
+    //     const currentDate = new Date();
+    //     const currentTimeString = currentDate.toLocaleString();  // 转化为本地时间字符串
 
-    // 如果不存在 "system" 角色的消息，那么在数组开头添加一条
-    if (!systemMessageExists) {
-        const currentDate = new Date();
-        const currentTimeString = currentDate.toLocaleString();  // 转化为本地时间字符串
+    //     historyMessages.unshift({
+    //         role: 'system',
+    //         content: `From now on, accept new prompt:
+    //     You are ChatGPT, a large language model trained by OpenAI, based on the GPT-4 architecture.
+    //     When we converse, I don't need to ask further questions; you will provide me with detailed and comprehensive answers directly! I really dislike it when a topic requires many questions for you to provide a complete and comprehensive response.
+    //     Knowledge cutoff: 2023-06. Answer me with Markdown if content fits . Current time: ${currentTimeString}`
+    //     });
+    // }
+    const historyMessageCount = await models_1.configModel.getConfig('history_message_count');
+    console.log(`Retrieved history message count: ${historyMessageCount}`);
+    const historyMessagesData = await models_1.messageModel.getMessages({ page: 0, page_size: Number(historyMessageCount) }, {
+        parent_message_id: parentMessageId
+    });
+    console.log(`Retrieved ${historyMessagesData.rows.length} history messages.`);
 
-        historyMessages.unshift({
-            role: 'system',
-            content: `From now on, accept new prompt:
-            You are ChatGPT, a large language model trained by OpenAI, based on the GPT-4 architecture.
-            When we converse, I don't need to ask further questions; you will provide me with detailed and comprehensive answers directly! I really dislike it when a topic requires many questions for you to provide a complete and comprehensive response.
-            Knowledge cutoff: 2023-06. Answer me with Markdown if content fits . Current time: ${currentTimeString}`
-        });
+    let historyMessages = historyMessagesData.rows.map(item => ({
+        role: item.toJSON().role,
+        content: item.toJSON().content
+    })).reverse();
+
+    // 添加currentMessage
+    historyMessages.push(currentMessage);
+
+    // 如果总 Token 数量超过最大限制，则从历史消息中移除，直到符合条件
+    while (userMessageTokens.usedTokens > max_tokens_value && historyMessages.length > 1) {
+        historyMessages.shift(); // 移除最早的消息
+        userMessageTokens = new GPTTokens({ model: "gpt-3.5-turbo", messages: historyMessages });
     }
 
     const messages = [
@@ -1282,7 +1329,7 @@ router.post('/upload/image', upload.single('file'), async (req, res) => {
             res.status(400).send('上传失败');
         } else {
             // 返回文件的 URL
-            const url = `https://${cosSetting.accelerateDomain}/${params.Key}`;
+            const url = `${cosSetting.accelerateDomain}/${params.Key}`;
             res.json({ code: 0, data: { url }, message: '上传成功' });
         }
     });

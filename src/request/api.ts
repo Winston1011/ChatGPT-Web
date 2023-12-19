@@ -12,6 +12,7 @@ import {
   RoomInfo,
   MessageInfo,
   UserInfo,
+  UoploadResponse,
 } from '@/types'
 import request from '.'
 import { formatTime } from '@/utils'
@@ -147,5 +148,5 @@ export function postUploadImage(
 ) {
   const formData = new FormData();
   formData.append('file', file); // 'file' 应与服务器端 multer 配置一致
-  return request.post<{ url: string }>('/api/upload/image', formData, options)
+  return request.post< UoploadResponse >('/api/upload/image', formData, options)
 }

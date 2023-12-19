@@ -2,13 +2,13 @@ import React, { useEffect, useMemo, useRef } from 'react'
 import { copyToClipboard, joinTrim } from '@/utils'
 import styles from './index.module.less'
 import OpenAiLogo from '@/components/OpenAiLogo'
-import { Space, Popconfirm, message, Dropdown } from 'antd'
+import { Space, Popconfirm, Image, message, Dropdown } from 'antd'
 
 import MarkdownIt from 'markdown-it'
 import mdKatex from '@traptitech/markdown-it-katex'
 import mila from 'markdown-it-link-attributes'
 import hljs from 'highlight.js'
-import { CopyOutlined, DeleteOutlined, MoreOutlined, RedoOutlined } from '@ant-design/icons'
+import { CopyOutlined, DeleteOutlined, LoadingOutlined, MoreOutlined, RedoOutlined } from '@ant-design/icons'
 
 const dropdownItems = [
   {
@@ -49,6 +49,9 @@ function ChatMessage({
   status,
   time,
   model,
+  isImage,
+  imageUrl,
+  uploadedImageUrl,
   onDelChatMessage,
   onRefurbishChatMessage
 }: {
@@ -57,11 +60,42 @@ function ChatMessage({
   status: 'pass' | 'loading' | 'error' | string
   time: string
   model?: string
+  isImage?: boolean,
+  imageUrl?: string,
+  uploadedImageUrl?: string,
   onDelChatMessage?: () => void
   onRefurbishChatMessage?: () => void
 }) {
   const copyMessageKey = 'copyMessageKey'
   const markdownBodyRef = useRef<HTMLDivElement>(null)
+
+  const mdi = new MarkdownIt({
+    html: true,
+    linkify: true,
+    highlight(code, language) {
+      const validLang = !!(language && hljs.getLanguage(language));
+      if (validLang) {
+        const lang = language ?? '';
+        return highlightBlock(hljs.highlight(code, { language: lang }).value, lang, code);
+      }
+      return highlightBlock(hljs.highlightAuto(code).value, '', code);
+    }
+  });
+
+  mdi.use(mila, { attrs: { target: '_blank', rel: 'noopener' } })
+  mdi.use(mdKatex, { blockClass: 'katex-block', errorColor: ' #cc0000', output: 'mathml' })
+
+
+  useEffect(() => {
+    addCopyEvents();
+    return () => {
+      removeCopyEvents();
+    };
+  }, [markdownBodyRef.current]);
+
+  function highlightBlock(str: string, lang: string, code: string) {
+    return `<pre class="code-block-wrapper"><div class="code-block-header"><span class="code-block-header__lang">${lang}</span><span class="code-block-header__copy">复制代码</span></div><code class="hljs code-block-body ${lang}">${str}</code></pre>`
+  }
 
   function onCopyOut(text: string) {
     copyToClipboard(text)
@@ -83,15 +117,29 @@ function ChatMessage({
 
   function addCopyEvents() {
     if (markdownBodyRef.current) {
-      const copyBtn = markdownBodyRef.current.querySelectorAll('.code-block-header__copy')
+      const copyBtn = markdownBodyRef.current.querySelectorAll('.code-block-header__copy');
       copyBtn.forEach((btn) => {
         btn.addEventListener('click', () => {
-          const code = btn.parentElement?.nextElementSibling?.textContent
+          const code = btn.parentElement?.nextElementSibling?.textContent;
           if (code) {
-            onCopyOut(code);
+            copyToClipboard(code)
+              .then(() => {
+                message.open({
+                  key: copyMessageKey,
+                  type: 'success',
+                  content: '复制成功'
+                });
+              })
+              .catch(() => {
+                message.open({
+                  key: copyMessageKey,
+                  type: 'error',
+                  content: '复制失败'
+                });
+              });
           }
-        })
-      })
+        });
+      });
     }
   }
 
@@ -106,25 +154,35 @@ function ChatMessage({
     }
   }
 
-  function highlightBlock(str: string, lang: string, code: string) {
-    return `<pre class="code-block-wrapper"><div class="code-block-header"><span class="code-block-header__lang">${lang}</span><span class="code-block-header__copy">复制代码</span></div><code class="hljs code-block-body ${lang}">${str}</code></pre>`
+  function renderLoadingText() {
+    if (model === 'dall-e-3') {
+      return '绘制中，请稍候...';
+    }
+    return 'AI 思考中...';
   }
 
-  const mdi = new MarkdownIt({
-    html: true,
-    linkify: true,
-    highlight(code, language) {
-      const validLang = !!(language && hljs.getLanguage(language))
-      if (validLang) {
-        const lang = language ?? ''
-        return highlightBlock(hljs.highlight(code, { language: lang }).value, lang, code)
-      }
-      return highlightBlock(hljs.highlightAuto(code).value, '', code)
-    }
-  })
+  function renderContent() {
+    console.log('Rendering content, isImage:', isImage, 'imageUrl:', imageUrl);
 
-  mdi.use(mila, { attrs: { target: '_blank', rel: 'noopener' } })
-  mdi.use(mdKatex, { blockClass: 'katex-block', errorColor: ' #cc0000', output: 'mathml' })
+    // 如果有 AI 生成的图片，则直接返回该图片
+    if (isImage && imageUrl) {
+      return <Image src={imageUrl} alt="Generated Content" style={{ maxHeight: '40vh' }} />;
+    }
+
+    // 如果有上传的图片 URL，则准备图片元素
+    const imageElement = uploadedImageUrl ? <Image src={uploadedImageUrl} alt="Uploaded Content" style={{ maxHeight: '40vh' }} /> : null;
+
+    // 如果有文本内容，则准备文本元素
+    const textElement = content ? <div ref={markdownBodyRef} className={'markdown-body'} dangerouslySetInnerHTML={{ __html: mdi.render(content) }} /> : null;
+
+    // 返回图片和文本的组合
+    return (
+      <>
+        {imageElement}
+        {textElement}
+      </>
+    );
+  }
 
   const renderText = useMemo(() => {
     const value = content || ''
@@ -149,13 +207,6 @@ function ChatMessage({
       />
     )
   }, [content, position])
-
-  useEffect(() => {
-    addCopyEvents()
-    return () => {
-      removeCopyEvents()
-    }
-  }, [markdownBodyRef.current])
 
   function chatAvatar({ icon, style }: { icon: string; style?: React.CSSProperties }) {
     return (
@@ -212,9 +263,16 @@ function ChatMessage({
           ])}
         >
           {status === 'loading' ? (
-            <OpenAiLogo rotate />
+            // <OpenAiLogo rotate />
+            <div>
+              <div>
+                <LoadingOutlined />
+                <span> {renderLoadingText()}</span>
+              </div>
+            </div>
           ) : (
-            renderText
+            renderContent()
+            // renderText
           )}
           <div className={styles.chatMessage_content_operate}
             style={{

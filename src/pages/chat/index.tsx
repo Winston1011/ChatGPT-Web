@@ -1,7 +1,7 @@
 /* eslint-disable no-prototype-builtins */
 /* eslint-disable no-console */
 import { CommentOutlined, DeleteOutlined , UploadOutlined} from '@ant-design/icons'
-import { Button, Modal, Popconfirm, Space, Tabs, Select, message ,Upload, UploadFile} from 'antd'
+import { Button, Modal, Popconfirm, Space, Tabs, Select, message ,Upload, UploadFile, Radio, RadioChangeEvent} from 'antd'
 import { useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 
 import styles from './index.module.less'
@@ -11,7 +11,7 @@ import RoleLocal from './components/RoleLocal'
 import AllInput from './components/AllInput'
 import ChatMessage from './components/ChatMessage'
 import { ChatGpt, RequestChatOptions } from '@/types'
-import { postChatCompletions, postUploadImage } from '@/request/api'
+import { postChatCompletions, postImagesGenerations, postUploadImage } from '@/request/api'
 import Reminder from '@/components/Reminder'
 import { filterObjectNull, formatTime, generateUUID, handleChatData } from '@/utils'
 import { useScroll } from '@/hooks/useScroll'
@@ -25,6 +25,16 @@ function ChatPage() {
   const { scrollToBottomIfAtBottom, scrollToBottom } = useScroll(scrollRef.current)
   const { token, setLoginModal } = userStore()
   const { config, models, changeConfig, setConfigModal } = configStore()
+
+  useEffect(() => {
+    if (models.length > 0 && (!config.model || !models.some(m => m.value === config.model))) {
+      changeConfig({
+        ...config,
+        model: models[0].value
+      });
+    }
+  }, [models, config, changeConfig]);
+
   const {
     chats,
     addChat,
@@ -39,17 +49,19 @@ function ChatPage() {
     updateChats
   } = chatStore()
 
-  const bodyResize = useDocumentResize()
-
   // 角色预设
   const [roleConfigModal, setRoleConfigModal] = useState({
     open: false
   })
   const [loading, setLoading] = useState(false);
 
-   // 添加一个状态来保存图片的 URL
-   const [imageURL, setImageURL] = useState('');
-   const [fileList, setFileList] = useState<UploadFile<any>[]>([]);
+
+  const [selectedQuickPrompt, setSelectedQuickPrompt] = useState('');
+  // 在状态中添加一个用于存储上传文件的变量
+  const [uploadedFile, setUploadedFile] = useState(null);
+  // 添加一个状态来保存图片的 URL
+  const [imageURL, setImageURL] = useState('');
+  const [fileList, setFileList] = useState<UploadFile<any>[]>([]);
 
   const uploadImage = async (file: File) => {
     try {
@@ -82,6 +94,11 @@ function ChatPage() {
     return false; // 阻止组件自动上传文件
   };
 
+  const quickPrompts = ['', '唯美二次元', '中国风', '艺术创想', '插画', '炫彩插画', '水墨画', '超现实主义', '印象派', '像素艺术', '海报', '写实风景', '卡通', '扁平风'];
+
+  const handleQuickPromptChange = (e: RadioChangeEvent) => {
+    setSelectedQuickPrompt(e.target.value);
+  };
 
   const imageUploadSelector = config.model === 'gpt-4-vision-preview' ? (
     <div className={styles.drawPage_config}>
@@ -100,6 +117,52 @@ function ChatPage() {
   ) : null;
 
 
+  // 图片大小选择器
+  const imageSizeSelector = (
+    <div className={styles.drawPage_config}>
+      <Space direction="vertical">
+        <p>比例({config.size})</p>
+        <Radio.Group
+          //buttonStyle="solid"
+          defaultValue={config.size || '1024x1024'}
+          value={config.size}
+          onChange={(e) => {
+            changeConfig({ ...config, size: e.target.value });
+          }}
+        >
+          <Radio.Button value={'1024x1024'}>方形</Radio.Button>
+          <Radio.Button value={'1792x1024'}>横向</Radio.Button>
+          <Radio.Button value={'1024x1792'}>竖向</Radio.Button>
+        </Radio.Group>
+        <p>图片类型</p>
+        <div className={styles.drawPage_quickPrompts}>
+          <Radio.Group onChange={handleQuickPromptChange} value={selectedQuickPrompt}>
+            {quickPrompts.map(prompt => (
+              <Radio key={prompt} value={prompt} className={styles.radio}>
+                {prompt === '' ? '默认' : prompt}
+              </Radio>
+            ))}
+          </Radio.Group>
+        </div>
+      </Space>
+    </div>
+  );
+
+  useLayoutEffect(() => {
+    if (scrollRef) {
+      scrollToBottom()
+    }
+  }, [scrollRef.current, selectChatId, chats])
+
+
+  // 当前聊天记录
+  const chatMessages = useMemo(() => {
+    const chatList = chats.filter((c) => c.id === selectChatId)
+    if (chatList.length <= 0) {
+      return []
+    }
+    return chatList[0].data
+  }, [selectChatId, chats])
 
 
   const handleMenuClick = (r: { key: string }) => {
@@ -119,21 +182,6 @@ function ChatPage() {
       changeSelectChatId(id);
     }
   };
-
-  useLayoutEffect(() => {
-    if (scrollRef) {
-      scrollToBottom()
-    }
-  }, [scrollRef.current, selectChatId, chats])
-
-  // 当前聊天记录
-  const chatMessages = useMemo(() => {
-    const chatList = chats.filter((c) => c.id === selectChatId)
-    if (chatList.length <= 0) {
-      return []
-    }
-    return chatList[0].data
-  }, [selectChatId, chats])
 
 
   // 创建对话按钮
@@ -192,6 +240,14 @@ function ChatPage() {
         // 终止： AbortError
         console.log(error.name)
       })
+
+    if (response) {
+      // 消息发送成功，更新聊天记录等操作
+
+      // 在这里重置 imageURL
+      setImageURL('');
+      setFileList([]);    // 清除上传文件列表
+    }
 
     if (!(response instanceof Response)) {
       // 这里返回是错误 ...
@@ -280,6 +336,7 @@ function ChatPage() {
       prompt: vaule,
       parentMessageId,
       selectChatIdStr,
+      imageURL: config.model === 'gpt-4-vision-preview' ? imageURL || undefined : undefined,
       options: filterObjectNull({
         ...config,
         ...refurbishOptions?.requestOptions.options
@@ -302,7 +359,8 @@ function ChatPage() {
         dateTime: formatTime(),
         status: 'pass',
         role: 'user',
-        requestOptions
+        requestOptions,
+        uploadedImageUrl: config.model === 'gpt-4-vision-preview' ? imageURL || undefined : undefined,
       })
       setChatInfo(selectChatId, {
         id: assistantMessageId,
@@ -317,12 +375,50 @@ function ChatPage() {
     const controller = new AbortController()
     const signal = controller.signal
     setFetchController(controller)
-    serverChatCompletions({
-      requestOptions,
-      signal,
-      userMessageId,
-      assistantMessageId,
-    })
+
+
+    if (config.model === 'dall-e-3') {
+      const promptValue = selectedQuickPrompt ? `${selectedQuickPrompt} ${vaule}` : vaule;
+      const requestOptions = {
+        prompt: promptValue,
+        parentMessageId,
+        size: config.size,
+        options: filterObjectNull({
+          ...config,
+        }),
+      };
+
+      postImagesGenerations(requestOptions, {}, { timeout: 0 })
+        .then(res => {
+          if (res.code === 0 && res.data && res.data.length > 0) {
+            const imageUrl = res.data[0].url;
+            console.log('Setting image URL:', imageUrl);
+            setChatDataInfo(selectChatId, userMessageId, { status: 'pass' });
+            setChatDataInfo(selectChatId, assistantMessageId, {
+              imageUrl,
+              dateTime: formatTime(),
+              status: 'pass',
+              isImage: true,
+            });
+          } else {
+            setChatDataInfo(selectChatId, assistantMessageId, {
+              text: '绘画失败或未返回图片',
+              dateTime: formatTime(),
+              status: 'error',
+            });
+          }
+        })
+        .finally(() => {
+          setFetchController(null);
+        });
+    } else {
+      serverChatCompletions({
+        requestOptions,
+        signal,
+        userMessageId,
+        assistantMessageId,
+      })
+    }
   }
 
   return (
@@ -454,7 +550,10 @@ function ChatPage() {
                     status={item.status}
                     content={item.text}
                     time={item.dateTime}
-                    model={item.requestOptions?.hasOwnProperty('options') ? item.requestOptions.options.model : 'gpt-3.5-turbo'}
+                    model={item.requestOptions?.options?.model}
+                    isImage={item.isImage}
+                    imageUrl={item.imageUrl}
+                    uploadedImageUrl={item.uploadedImageUrl}
                     onDelChatMessage={() => {
                       delChatMessage(selectChatId, item.id)
                     }}
@@ -470,6 +569,7 @@ function ChatPage() {
             </div>
           </div>
           <div className={styles.chatPage_container_two}>
+            {config.model === 'dall-e-3' && imageSizeSelector}
             {imageUploadSelector}
             <AllInput
               disabled={!!fetchController}
@@ -506,21 +606,6 @@ function ChatPage() {
         }}
       >
         <RoleLocal />
-        {/* <Tabs
-          tabPosition={bodyResize.width <= 600 ? 'top' : 'left'}
-          items={[
-            {
-              key: 'roleLocal',
-              label: '本地数据',
-              children: <RoleLocal />
-            },
-            {
-              key: 'roleNetwork',
-              label: '网络数据',
-              children: <RoleNetwork />
-            }
-          ]}
-        /> */}
       </Modal>
     </div>
   )
