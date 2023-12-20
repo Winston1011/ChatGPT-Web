@@ -21,6 +21,7 @@ const multer = require('multer');
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
 const request = require('request');
+const crypto = require('crypto');
 
 router.get('/config', async (req, res, next) => {
     const shop_introduce = (await models_1.configModel.getKeyConfig('shop_introduce')).value;
@@ -666,7 +667,7 @@ router.post('/chat/completions', async (req, res) => {
     const userMessageId = (0, utils_1.generateNowflakeId)(1)();
     // user存放的最终content
     let userContent = prompt;
-    if (imageURL.length > 0) {
+    if (imageURL !== undefined) {
         userContent = prompt + "<=>" + imageURL;
     }
     const userMessageInfo = {
@@ -1397,12 +1398,16 @@ router.post('/upload/image', upload.single('file'), async (req, res) => {
 
     // 获取上传的文件
     const file = req.file;
+    // 计算文件的 MD5
+    const hash = crypto.createHash('md5');
+    hash.update(file.buffer);
+    const fileMD5 = hash.digest('hex');
 
     // 定义上传到 COS 的参数
     const params = {
         Bucket: cosSetting.bucketName,
         Region: cosSetting.region,
-        Key: `images/${Date.now()}-${file.originalname}`,
+        Key: `images/${fileMD5}-${file.originalname}`,
         Body: file.buffer,
         ContentLength: file.size
     };
