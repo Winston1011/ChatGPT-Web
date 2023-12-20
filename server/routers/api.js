@@ -20,6 +20,7 @@ const COS = require('cos-nodejs-sdk-v5');
 const multer = require('multer');
 const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
+const request = require('request');
 
 router.get('/config', async (req, res, next) => {
     const shop_introduce = (await models_1.configModel.getKeyConfig('shop_introduce')).value;
@@ -321,6 +322,89 @@ router.post('/images/generations', async (req, res) => {
     const { data } = (await generations.json());
     console.log("generations data", data)
 
+    // chat中 画图，则写入message表
+    // 取出options值
+    const chatDrawFlag = req.headers['chatdrawflag'];
+    const selectChatIdStr = req.headers['selectchatidstr'];
+    const userMessageId = req.headers['usermessageid'];
+    const assistantMessageId = req.headers['assistantmessageid'];
+    if (chatDrawFlag == 'true') {
+        // 生成结果url
+        let resUrl = data[0].url;
+
+        const cosSettingStr = await models_1.configModel.getConfig('cos_settings');
+        // 尝试解析配置字符串为对象
+        let cosSetting = JSON.parse(cosSettingStr);
+
+        // 定义上传到 COS 的参数
+        let params = {
+            Bucket: cosSetting.bucketName,
+            Region: cosSetting.region,
+            Key: `images/${Date.now()}-${prompt}.jpg`,
+        };
+        const finalResUrl = `${cosSetting.accelerateDomain}/${params.Key}`;
+        // 创建 COS 实例
+        const cos = new COS({
+            SecretId: cosSetting.secretId,
+            SecretKey: cosSetting.secretKey
+        });
+
+        request({ url: resUrl, encoding: null }, (err, res, buffer) => {
+            if (err) {
+                console.log('request resUrl err', err)
+            } else {
+                // 将buffer写入params
+                const finalParams = {
+                    ...params,
+                    Body: buffer
+                }
+                // 上传文件到 COS
+                cos.putObject(finalParams, function (err, data) {
+                    if (err) {
+                        console.log('upload resUrl err', err)
+                    } else {
+                        // 返回文件的 URL
+                        console.log('resUrl upload:', `${cosSetting.accelerateDomain}/${params.Key}`);
+                    }
+                });
+            }
+        })
+        
+        const options = {
+            frequency_penalty: 0,
+            model: "dall-e-3",
+            presence_penalty: 0,
+            temperature: 0.5,
+            max_tokens: 2048
+        };
+        const assistantRandomId = (0, utils_1.generateNowflakeId)(2)();
+        const userRandomId = (0, utils_1.generateNowflakeId)(1)();
+
+        const userMessageInfo = {
+            user_id,
+            room_id: selectChatIdStr,
+            message_id: userMessageId,
+            id: userRandomId,
+            role: 'user',
+            content: prompt,
+            parent_message_id: selectChatIdStr,
+            ...options
+        };
+        const assistantInfo = {
+            user_id,
+            room_id: selectChatIdStr,
+            message_id: assistantMessageId,
+            id: assistantRandomId,
+            role: 'assistant',
+            content: finalResUrl ?? "",
+            parent_message_id: selectChatIdStr,
+            ...options
+        };
+    
+        // 写入message
+        models_1.messageModel.addMessages([userMessageInfo, assistantInfo]);
+    }
+
     if (vipExpireTime < todayTime && !userInfo.is_vip && !userInfo.is_svip) {
         models_1.userModel.updataUserVIP({
             id: user_id,
@@ -345,6 +429,7 @@ router.post('/images/generations', async (req, res) => {
     });
     res.json((0, utils_1.httpBody)(0, data));
 });
+
 // 对话
 router.post('/chat/completions', async (req, res) => {
     console.time('chatBeforeCost');
@@ -579,13 +664,18 @@ router.post('/chat/completions', async (req, res) => {
     console.timeEnd('chatRealCost')
     const assistantMessageId = (0, utils_1.generateNowflakeId)(2)();
     const userMessageId = (0, utils_1.generateNowflakeId)(1)();
+    // user存放的最终content
+    let userContent = prompt;
+    if (imageURL.length > 0) {
+        userContent = prompt + "<=>" + imageURL;
+    }
     const userMessageInfo = {
         user_id,
         room_id: selectChatIdStr,
         message_id: oldUserMessageId,
         id: userMessageId,
         role: 'user',
-        content: prompt,
+        content: userContent,
         parent_message_id: parentMessageId,
         ...options
     };

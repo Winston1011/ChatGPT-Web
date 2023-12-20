@@ -387,8 +387,13 @@ function ChatPage() {
           ...config,
         }),
       };
-
-      postImagesGenerations(requestOptions, {}, { timeout: 0 })
+      const imageOptions = {
+        chatDrawFlag: true,
+        userMessageId: userMessageId,
+        assistantMessageId: assistantMessageId,
+        selectChatIdStr: selectChatIdStr
+      };
+      postImagesGenerations(requestOptions, imageOptions, { timeout: 0 })
         .then(res => {
           if (res.code === 0 && res.data && res.data.length > 0) {
             const imageUrl = res.data[0].url;
