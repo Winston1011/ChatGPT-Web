@@ -9,6 +9,7 @@ import mdKatex from '@traptitech/markdown-it-katex'
 import mila from 'markdown-it-link-attributes'
 import hljs from 'highlight.js'
 import { CopyOutlined, DeleteOutlined, LoadingOutlined, MoreOutlined, RedoOutlined } from '@ant-design/icons'
+import { isUrl } from '@ant-design/pro-components'
 
 const dropdownItems = [
   {
@@ -171,6 +172,30 @@ function ChatMessage({
 
     // 如果有上传的图片 URL，则准备图片元素
     const imageElement = uploadedImageUrl ? <Image src={uploadedImageUrl} alt="Uploaded Content" style={{ maxHeight: '40vh' }} /> : null;
+
+    // 判断content是否为URL链接
+    const isContentUrl = isUrl(content)
+    if (isContentUrl) {
+      return <Image src={content} alt="Generated Content" style={{ maxHeight: '40vh' }} />;
+    }
+
+    // 判断content是否问文本+URL
+    const splitStr = content.split("<=>") ?? '';
+    const contentStr = splitStr[0] ?? '';
+    const imgUrl = splitStr[1] ?? '';
+    if (contentStr.length > 0 && imgUrl.length > 0) {
+      // 如果有图片 URL，则准备图片元素
+      const imgElement = imgUrl ? <Image src={imgUrl} alt="Ask Image Content" style={{ maxHeight: '40vh' }} /> : null;
+      // 如果有文本内容，则准备文本元素
+      const contentStrElement = contentStr ? <div ref={markdownBodyRef} className={'markdown-body'} dangerouslySetInnerHTML={{ __html: mdi.render(contentStr) }} /> : null;
+      // 返回图片和文本的组合
+      return (
+        <>
+          {contentStrElement}
+          {imgElement}
+        </>
+      );
+    }
 
     // 如果有文本内容，则准备文本元素
     const textElement = content ? <div ref={markdownBodyRef} className={'markdown-body'} dangerouslySetInnerHTML={{ __html: mdi.render(content) }} /> : null;

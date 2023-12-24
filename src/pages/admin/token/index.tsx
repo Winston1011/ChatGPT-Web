@@ -33,7 +33,11 @@ const modelsAll = [
     {
         label: 'DALL·E3绘画',
         value: 'dall-e-3'
-    }
+    },
+    {
+        label: 'GPT-4-Vision',
+        value: 'gpt-4-vision-preview'
+    },
 ]
 
 function TokenPage() {
