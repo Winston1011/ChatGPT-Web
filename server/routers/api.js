@@ -22,6 +22,7 @@ const storage = multer.memoryStorage();
 const upload = multer({ storage: storage });
 const request = require('request');
 const crypto = require('crypto');
+const Minio = require('minio');
 
 router.get('/config', async (req, res, next) => {
     const shop_introduce = (await models_1.configModel.getKeyConfig('shop_introduce')).value;
@@ -333,41 +334,66 @@ router.post('/images/generations', async (req, res) => {
         // 生成结果url
         let resUrl = data[0].url;
 
-        const cosSettingStr = await models_1.configModel.getConfig('cos_settings');
-        // 尝试解析配置字符串为对象
-        let cosSetting = JSON.parse(cosSettingStr);
+        // const cosSettingStr = await models_1.configModel.getConfig('cos_settings');
+        // // 尝试解析配置字符串为对象
+        // let cosSetting = JSON.parse(cosSettingStr);
 
-        // 定义上传到 COS 的参数
-        let params = {
-            Bucket: cosSetting.bucketName,
-            Region: cosSetting.region,
-            Key: `images/${Date.now()}-${prompt}.jpg`,
-        };
-        const finalResUrl = `${cosSetting.accelerateDomain}/${params.Key}`;
-        // 创建 COS 实例
-        const cos = new COS({
-            SecretId: cosSetting.secretId,
-            SecretKey: cosSetting.secretKey
+        // // 定义上传到 COS 的参数
+        // let params = {
+        //     Bucket: cosSetting.bucketName,
+        //     Region: cosSetting.region,
+        //     Key: `images/${Date.now()}-${prompt}.jpg`,
+        // };
+        // const finalResUrl = `${cosSetting.accelerateDomain}/${params.Key}`;
+        // // 创建 COS 实例
+        // const cos = new COS({
+        //     SecretId: cosSetting.secretId,
+        //     SecretKey: cosSetting.secretKey
+        // });
+
+        // 创建 minio 实例
+        const minioClient = new Minio.Client({
+            endPoint: 'www.nonezero.top',
+            port: 9000,
+            useSSL: false,
+            accessKey: 'winston',
+            secretKey: 'Winston110150',
         });
+        const bucketName = 'dz-minio-os';
+        const objectName = `${Date.now()}-${prompt}.jpg`;
+        const finalResUrl = `https://minioapi.nonezero.top/dz-minio-os/${objectName}`;
 
-        request({ url: resUrl, encoding: null }, (err, res, buffer) => {
+        request({ url: resUrl, encoding: null }, async (err, res, buffer) => {
             if (err) {
-                console.log('request resUrl err', err)
+                console.log('request resUrl err', err);
             } else {
                 // 将buffer写入params
-                const finalParams = {
-                    ...params,
-                    Body: buffer
+                // const finalParams = {
+                //     ...params,
+                //     Body: buffer
+                // }
+                // // 上传文件到 COS
+                // cos.putObject(finalParams, function (err, data) {
+                //     if (err) {
+                //         console.log('upload resUrl err', err)
+                //     } else {
+                //         // 返回文件的 URL
+                //         console.log('resUrl upload:', `${cosSetting.accelerateDomain}/${params.Key}`);
+                //     }
+                // });
+                // 上传至minio
+                try {
+                    const contentType = res.headers['content-type']; // 获取content-type
+                    const metaData = {
+                        'Content-Type': contentType // 设置contentType属性
+                    };
+                    console.log('upload minio metaData', metaData)
+                    await minioClient.putObject(bucketName, objectName, buffer, metaData); // 上传到MinIO
+                    const url = `https://minioapi.nonezero.top/dz-minio-os/${objectName}`;
+                    console.log('resUrl minio upload:', url);
+                } catch (err) {
+                    console.log('resUrl minio upload failed:', err);
                 }
-                // 上传文件到 COS
-                cos.putObject(finalParams, function (err, data) {
-                    if (err) {
-                        console.log('upload resUrl err', err)
-                    } else {
-                        // 返回文件的 URL
-                        console.log('resUrl upload:', `${cosSetting.accelerateDomain}/${params.Key}`);
-                    }
-                });
             }
         })
         
@@ -1370,7 +1396,7 @@ router.all('/pay/notify', async (req, res, next) => {
     res.json('success');
 });
 
-// 上传图片
+// 上传至cos
 router.post('/upload/image', upload.single('file'), async (req, res) => {
     const cosSettingStr = await models_1.configModel.getConfig('cos_settings');
     // 验证配置存在性
@@ -1428,6 +1454,47 @@ router.post('/upload/image', upload.single('file'), async (req, res) => {
             res.json({ code: 0, data: { url }, message: '上传成功' });
         }
     });
+});
+
+// 上传至minio
+router.post('/upload/image1', upload.single('file'), async (req, res) => {
+
+    // 检查文件存在性
+    if (!req.file) {
+        return res.status(400).send('上传minio失败');
+    }
+
+    // 获取上传的文件
+    const file = req.file;
+    // 计算文件的 MD5
+    const hash = crypto.createHash('md5');
+    hash.update(file.buffer);
+    const fileMD5 = hash.digest('hex');
+
+    // 创建 minio 实例
+    const minioClient = new Minio.Client({
+        endPoint: 'www.nonezero.top',
+        port: 9000,
+        useSSL: false,
+        accessKey: 'winston',
+        secretKey: 'Winston110150',
+    });
+
+    try {
+        const bucketName = 'dz-minio-os'; //自己创建的桶名
+        const objectName = `${fileMD5}-${file.originalname}`; // 设置对象名称
+        const metaData = {
+            'Content-Type': file.mimetype // 设置contentType属性
+        };
+        console.log('upload minio metaData', metaData);
+        const data = await minioClient.putObject(bucketName, objectName, file.buffer, metaData); // 上传到MinIO
+        console.log('upload minio data', data);
+        const url = `https://minioapi.nonezero.top/dz-minio-os/${objectName}`;
+        res.json({ code: 0, data: { url }, message: '上传minio成功' });
+    } catch (err) {
+        res.status(500).send(err);
+    }
+
 });
 
 exports.default = router;

@@ -51,7 +51,8 @@
     "@react-buddy/ide-toolbox": "^2.4.0",
     "@react-buddy/palette-antd": "^5.3.0",
     "cos-nodejs-sdk-v5": "^2.12.6",
-    "multer": "^1.4.5-lts.1"
+    "multer": "^1.4.5-lts.1",
+    "minio": "^7.1.2"
   },
   "devDependencies": {
     "@commitlint/cli": "^17.6.1",
