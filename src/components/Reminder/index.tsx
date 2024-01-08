@@ -23,7 +23,7 @@ function Reminder(){
             desc: '写一篇短文，用故事阐释幸福的意义'
         },{
             id: 'daimabianxie',
-            icon: 'https://www.imageoss.com/images/2023/04/23/Frame2x14a0f6c48d4355c6ea.png',
+            icon: 'https://minioapi.nonezero.top/dz-minio-os/Frame2x14a0f6c48d4355c6ea.png',
             name: '代码编写',
             desc: '使用JavaScript写一个获取随机数的函数'
         }
@@ -31,7 +31,7 @@ function Reminder(){
 
     return (
 <div className={styles.reminder}>
-        <h2 className={styles.reminder_title}><img src="https://www.imageoss.com/images/2023/04/23/robot-logo4987eb2ca3f5ec85.png" alt="" />欢迎来到 {import.meta.env.VITE_APP_TITLE}</h2>
+        <h2 className={styles.reminder_title}><img src="https://minioapi.nonezero.top/dz-minio-os/robot-logo.png" alt="" />欢迎来到 {import.meta.env.VITE_APP_TITLE}</h2>
         <p className={styles.reminder_message}>与AI智能聊天，畅想无限可能！基于先进的AI引擎，让你的交流更加智能、高效、便捷！</p>
         <p className={styles.reminder_message}><span>Shift</span> + <span>Enter</span> 换行。开头输入 <span>/</span> 召唤 Prompt 角色预设。</p>
         <div className={styles.reminder_question}>

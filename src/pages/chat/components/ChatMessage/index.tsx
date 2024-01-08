@@ -270,7 +270,7 @@ function ChatMessage({
       {position === 'left' &&
         chatAvatar({
           style: { marginRight: 8 },
-          icon: model && model.indexOf('gpt-4') !== -1 ? 'https://u1.dl0.cn/icon/chat_gpt_4.png' : 'https://u1.dl0.cn/icon/openailogo.svg'
+          icon: model && model.indexOf('gpt-4') !== -1 ? 'https://minioapi.nonezero.top/dz-minio-os/gpt-4-icon.png' : 'https://minioapi.nonezero.top/dz-minio-os/gpt-3.5-icon.png'
         })}
       <div className={styles.chatMessage_content}>
         <span
@@ -340,7 +340,7 @@ function ChatMessage({
       {position === 'right' &&
         chatAvatar({
           style: { marginLeft: 8 },
-          icon: 'https://u1.dl0.cn/icon/1682426702646avatarf3db669b024fad66-1930929abe2847093.png'
+          icon: 'https://minioapi.nonezero.top/dz-minio-os/user-icon-1.png'
         })}
     </div>
   )
