@@ -3,6 +3,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 const tslib_1 = require("tslib");
 const db_1 = require("../db");
 const mysql_1 = tslib_1.__importDefault(require("./mysql"));
+const { Op } = require('sequelize');
+
 async function getConfig(key) {
     const findAll = await mysql_1.default.findAll();
     if (key && findAll && findAll.length > 0) {
@@ -27,6 +29,16 @@ async function getKeyConfig(key) {
     return find;
 }
 
+async function getKeyConfigs(keys) {
+    return await mysql_1.default.findAll({
+        where: {
+            name: {
+                [Op.in]: keys
+            }
+        }
+    });
+}
+
 async function editConfigs(updatedData) {
     return db_1.sequelizeExample.transaction(async (t) => {
         for (const data of updatedData) {
@@ -41,5 +53,6 @@ async function editConfigs(updatedData) {
 exports.default = {
     getConfig,
     editConfigs,
-    getKeyConfig
+    getKeyConfig,
+    getKeyConfigs
 };

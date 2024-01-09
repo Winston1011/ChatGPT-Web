@@ -23,6 +23,7 @@ const upload = multer({ storage: storage });
 const request = require('request');
 const crypto = require('crypto');
 const Minio = require('minio');
+const formatTime_1 = tslib_1.__importDefault(require("../utils/formatTime"));
 
 router.get('/config', async (req, res, next) => {
     const shop_introduce = (await models_1.configModel.getKeyConfig('shop_introduce')).value;
@@ -87,7 +88,7 @@ router.get('/send_sms', async (req, res) => {
 router.post('/login', async (req, res) => {
     const { account, code, password } = req.body;
     let { invite_code } = req.body
-    if(invite_code === ''){
+    if (invite_code === '') {
         invite_code = 'winstondz'
     }
     const ip = (0, utils_1.getClientIP)(req);
@@ -98,7 +99,7 @@ router.post('/login', async (req, res) => {
     let userInfo = await models_1.userModel.getUserInfo({ account });
     let md5Password = '';
     // 密码+验证码注册&登录
-    if(account && code && password){
+    if (account && code && password) {
         const redisCode = await redis_1.default.select(0).get(`code:${account}`);
         md5Password = (0, utils_1.generateMd5)(password);
         if (!redisCode) {
@@ -396,7 +397,7 @@ router.post('/images/generations', async (req, res) => {
                 }
             }
         })
-        
+
         const options = {
             frequency_penalty: 0,
             model: "dall-e-3",
@@ -427,7 +428,7 @@ router.post('/images/generations', async (req, res) => {
             parent_message_id: selectChatIdStr,
             ...options
         };
-    
+
         // 写入message
         models_1.messageModel.addMessages([userMessageInfo, assistantInfo]);
     }
@@ -462,28 +463,27 @@ router.post('/chat/completions', async (req, res) => {
     console.time('chatBeforeCost');
     const user_id = req?.user_id;
     if (!user_id) {
-        res.status(500).json((0, utils_1.httpBody)(-1, '服务端错误'));
+        res.status(500).json((0, utils_1.httpBody)(-1, '用户未登录'));
         return;
     }
     const userInfo = await models_1.userModel.getUserInfo({
         id: user_id
     });
     const ip = (0, utils_1.getClientIP)(req);
-    const { prompt, parentMessageId, selectChatIdStr, userMessageId: oldUserMessageId, assistantMessageId: oldAssistantMessageId , imageURL} = req.body;
+    const { prompt, parentMessageId, selectChatIdStr, userMessageId: oldUserMessageId, assistantMessageId: oldAssistantMessageId, imageURL } = req.body;
 
     // 取出options值
-    const model = req.body.options?.model;   
-    const temperature = req.body.options?.temperature;  
-    const presence_penalty = req.body.options?.presence_penalty;   
-    const frequency_penalty = req.body.options?.frequency_penalty;   
-    let max_tokens_value = req.body.options?.max_tokens; 
+    const model = req.body.options?.model;
+    const temperature = req.body.options?.temperature;
+    const presence_penalty = req.body.options?.presence_penalty;
+    const frequency_penalty = req.body.options?.frequency_penalty;
+    let max_tokens_value = req.body.options?.max_tokens;
 
     if (model.includes('gpt-4') && model !== 'gpt-4-32k') {
         max_tokens_value = 4096;
-    } else if(model === 'gpt-3.5-trubo' && max_tokens_value >= 2048){
+    } else if (model === 'gpt-3.5-turbo' && max_tokens_value >= 2048) {
         max_tokens_value = 2048;
     }
-
     const options = {
         frequency_penalty: frequency_penalty ?? 0,
         model,
@@ -640,7 +640,8 @@ router.post('/chat/completions', async (req, res) => {
     const historyMessageCount = await models_1.configModel.getConfig('history_message_count');
     console.log(`Retrieved history message count: ${historyMessageCount}`);
     const historyMessagesData = await models_1.messageModel.getMessages({ page: 0, page_size: Number(historyMessageCount) }, {
-        parent_message_id: parentMessageId
+        parent_message_id: parentMessageId,
+        status: 0,
     });
     console.log(`Retrieved ${historyMessagesData.rows.length} history messages.`);
 
@@ -655,7 +656,7 @@ router.post('/chat/completions', async (req, res) => {
     // 如果总 Token 数量超过最大限制，则从历史消息中移除，直到符合条件
     while (userMessageTokens.usedTokens > max_tokens_value && historyMessages.length > 1) {
         historyMessages.shift(); // 移除最早的消息
-        userMessageTokens = new GPTTokens({ model: "gpt-3.5-turbo", messages: historyMessages });
+        userMessageTokens = new GPTTokens({ model: options.model, messages: historyMessages });
     }
 
     const messages = [
@@ -673,22 +674,7 @@ router.post('/chat/completions', async (req, res) => {
     queue_1.checkTokenQueue.addTask({
         ...tokenInfo
     });
-    console.timeEnd('chatBeforeCost')
 
-    console.time('chatRealCost')
-    const chat = await (0, node_fetch_1.default)(`${tokenInfo.host}/v1/chat/completions`, {
-        method: 'POST',
-        body: JSON.stringify({
-            ...options,
-            messages,
-            stream: true
-        }),
-        headers: {
-            'Content-Type': 'application/json',
-            Authorization: `Bearer ${tokenInfo.key}`
-        }
-    });
-    console.timeEnd('chatRealCost')
     const assistantMessageId = (0, utils_1.generateNowflakeId)(2)();
     const userMessageId = (0, utils_1.generateNowflakeId)(1)();
     // user存放的最终content
@@ -716,168 +702,92 @@ router.post('/chat/completions', async (req, res) => {
         parent_message_id: parentMessageId,
         ...options
     };
+    // 提前获取所有需要的配置信息
+    const keys = ['ai3_ratio', 'ai3_16k_ratio', 'ai4_ratio', 'ai4_32k_ratio', 'ai4_vision_ratio'];
+    const aiRatioInfo = await models_1.configModel.getKeyConfigs(keys)
+        .then((configs) => {
+            let result = {};
+            configs.forEach((config) => {
+                result[config.name] = Number(config.value) || 0;
+            });
+            return result;
+        });
+    console.timeEnd('chatBeforeCost')
+
+    console.time('chatRealCost')
+    const chat = await (0, node_fetch_1.default)(`${tokenInfo.host}/v1/chat/completions`, {
+        method: 'POST',
+        body: JSON.stringify({
+            ...options,
+            messages,
+            stream: true
+        }),
+        headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${tokenInfo.key}`
+        }
+    });
+    console.timeEnd('chatRealCost')
     if (chat.status === 200 && chat.headers.get('content-type')?.includes('text/event-stream')) {
-        const ai3_ratio = (await models_1.configModel.getKeyConfig('ai3_ratio')).value || 0;
-        const ai3_16k_ratio = (await models_1.configModel.getKeyConfig('ai3_16k_ratio')).value || 0;
-        const ai4_ratio = (await models_1.configModel.getKeyConfig('ai4_ratio')).value || 0;
-        const ai4_32k_ratio = (await models_1.configModel.getKeyConfig('ai4_32k_ratio')).value || 0;
-        const ai4_vision_ratio = (await models_1.configModel.getKeyConfig('ai4_vision_ratio')).value || 0;
-        const aiRatioInfo = {
-            ai3_ratio,
-            ai3_16k_ratio,
-            ai4_ratio,
-            ai4_32k_ratio,
-            ai4_vision_ratio
-        };
         // 重试的时候 删除此前消息
-        if(oldUserMessageId === ''){
+        if (oldUserMessageId === '') {
             await models_1.messageModel.delMessages(oldAssistantMessageId);
         }
-
-        // 添加一个标志位来记录是否已经计算过费用
-        let isFeeCalculated = false;
-        // 添加一个标志位来记录是否已经结束对话
-        let isConversationEnded = false;
-        // 想在这里打印数据
+        // 设置响应头
         res.setHeader('Content-Type', 'text/event-stream;charset=utf-8');
         const jsonStream = new stream_1.Transform({
             objectMode: true,
             transform(chunk, encoding, callback) {
                 const bufferString = Buffer.from(chunk).toString();
-                const listString = (0, utils_1.handleChatData)(bufferString, assistantMessageId);
+                // const listString = (0, utils_1.handleChatData)(bufferString, assistantMessageId);
+                // 将字符串按照连续的两个换行符进行分割
+                let chunks = bufferString.toString().split(/\n{2}/g);
+                // 过滤掉空白的消息
+                chunks = chunks.filter((item) => item.trim());
+                const contents = [];
+                for (let i = 0; i < chunks.length; i++) {
+                    const message = chunks[i];
+                    let payload = message.replace(/^data: /, '');
+                    if (payload === '[DONE]') {
+                        contents.push(JSON.stringify({
+                            id: '',
+                            role: 'assistant',
+                            segment: 'stop',
+                            dateTime: (0, formatTime_1.default)(),
+                            content: '',
+                            assistantMessageId
+                        }));
+                    }
+                    try {
+                        payload = JSON.parse(payload);
+                    }
+                    catch (e) {
+                        // 忽略无法解析为 JSON 的消息
+                        continue;
+                    }
+                    const payloadContent = payload.choices?.[0]?.delta?.content || '';
+                    const payloadRole = payload.choices?.[0]?.delta?.role;
+                    const segment = payload === '[DONE]' ? 'stop' : payloadRole === 'assistant' ? 'start' : 'text';
+                    contents.push(JSON.stringify({
+                        id: payload.id,
+                        role: 'assistant',
+                        segment,
+                        dateTime: (0, formatTime_1.default)(),
+                        content: payloadContent,
+                        assistantMessageId
+                    }) + '\n\n');
+                }
+                let listString = contents.join('');
                 const list = listString.split('\n\n');
                 for (let i = 0; i < list.length; i++) {
                     if (list[i]) {
                         const jsonData = JSON.parse(list[i]);
                         if (jsonData.segment === 'stop') {
-                            // 结束存入数据库
-                            // 这里扣除一些东西
-                            // 将用户的消息存入数据库
-                            // 将返回的数据存入数据库
-                            // 扣除相关
-
-                            if(oldUserMessageId === ''){
-                                models_1.messageModel.addMessages([assistantInfo]);
-                            }else{
-                                models_1.messageModel.addMessages([userMessageInfo, assistantInfo]);
-                            }
-                            if (!isFeeCalculated) {
-                                if (options.model.includes('gpt-4') && svipExpireTime < todayTime) {
-                                    // GPT-4 非 SVIP 用户扣费逻辑，这里不再计算 tokens，直接扣除固定的 ratio
-                                    let ratio = Number(aiRatioInfo.ai4_ratio);
-                                    if(options.model.includes('32k')){
-                                        ratio = Number(aiRatioInfo.ai4_32k_ratio);
-                                    }
-                                    if(options.model.includes('vision')){
-                                        ratio = Number(aiRatioInfo.ai4_vision_ratio);
-                                    }
-                                    models_1.userModel.updataUserVIP({
-                                        id: user_id,
-                                        type: 'integral',
-                                        value: ratio,
-                                        operate: 'decrement'
-                                    });
-                                    const turnoverId = (0, utils_1.generateNowflakeId)(1)();
-                                    models_1.turnoverModel.addTurnover({
-                                        id: turnoverId,
-                                        user_id,
-                                        describe: `对话(${options.model})`,
-                                        value: `-${ratio}积分`
-                                    });
-                                } else if (options.model.includes('gpt-3') && vipExpireTime < todayTime && svipExpireTime < todayTime) {
-                                    // GPT-3 非 VIP 或 SVIP 用户扣费逻辑，这里不再计算 tokens，直接扣除固定的 ratio
-                                    let ratio = Number(aiRatioInfo.ai3_ratio);
-                                    if(options.model.includes('16k')){
-                                        ratio = Number(aiRatioInfo.ai3_16k_ratio);
-                                    }
-                                    models_1.userModel.updataUserVIP({
-                                        id: user_id,
-                                        type: 'integral',
-                                        value: ratio,
-                                        operate: 'decrement'
-                                    });
-                                    const turnoverId = (0, utils_1.generateNowflakeId)(1)();
-                                    models_1.turnoverModel.addTurnover({
-                                        id: turnoverId,
-                                        user_id,
-                                        describe: `对话(${options.model})`,
-                                        value: `-${ratio}积分`
-                                    });
-                                }
-                                models_1.actionModel.addAction({
-                                    user_id,
-                                    id: (0, utils_1.generateNowflakeId)(23)(),
-                                    ip,
-                                    type: 'chat',
-                                    describe: `对话(${options.model})`
-                                });
-                                // 计费
-                                isFeeCalculated = true;
-                                // 设置对话结束标志位为true
-                                isConversationEnded = true;
-                            }
-                        }
-                        else {
+                            // 结束将用户的消息存入数据库、扣除相关
+                            setImmediate(handleFeeCalculation, oldUserMessageId, userMessageInfo, assistantInfo, options, vipExpireTime, svipExpireTime, todayTime, aiRatioInfo, user_id, ip);
+                        } else {
+                            // 合并返回内容
                             assistantInfo.content += jsonData.content;
-                            if (!isConversationEnded && !isFeeCalculated && assistantInfo.content.length >= 50) {
-                                // 结束存入数据库
-                                // 这里扣除一些东西
-                                // 将返回的数据存入数据库
-                                // 扣除相关
-                                if (options.model.includes('gpt-4') && svipExpireTime < todayTime) {
-                                    // GPT-4 非 SVIP 用户扣费逻辑，这里不再计算 tokens，直接扣除固定的 ratio
-                                    let ratio = Number(aiRatioInfo.ai4_ratio);
-                                    if(options.model.includes('32k')){
-                                        ratio = Number(aiRatioInfo.ai4_32k_ratio);
-                                    }
-                                    if(options.model.includes('vision')){
-                                        ratio = Number(aiRatioInfo.ai4_vision_ratio);
-                                    }
-                                    models_1.userModel.updataUserVIP({
-                                        id: user_id,
-                                        type: 'integral',
-                                        value: ratio,
-                                        operate: 'decrement'
-                                    });
-                                    const turnoverId = (0, utils_1.generateNowflakeId)(1)();
-                                    models_1.turnoverModel.addTurnover({
-                                        id: turnoverId,
-                                        user_id,
-                                        describe: `对话(${options.model})`,
-                                        value: `-${ratio}积分`
-                                    });
-                                } else if (options.model.includes('gpt-3') && vipExpireTime < todayTime && svipExpireTime < todayTime) {
-                                    // GPT-3 非 VIP 或 SVIP 用户扣费逻辑，这里不再计算 tokens，直接扣除固定的 ratio
-                                    let ratio = Number(aiRatioInfo.ai3_ratio);
-                                    if(options.model.includes('16k')){
-                                        ratio = Number(aiRatioInfo.ai3_16k_ratio);
-                                    }
-                                    models_1.userModel.updataUserVIP({
-                                        id: user_id,
-                                        type: 'integral',
-                                        value: ratio,
-                                        operate: 'decrement'
-                                    });
-                                    const turnoverId = (0, utils_1.generateNowflakeId)(1)();
-                                    models_1.turnoverModel.addTurnover({
-                                        id: turnoverId,
-                                        user_id,
-                                        describe: `对话(${options.model})`,
-                                        value: `-${ratio}积分`
-                                    });
-                                }
-                                models_1.actionModel.addAction({
-                                    user_id,
-                                    id: (0, utils_1.generateNowflakeId)(23)(),
-                                    ip,
-                                    type: 'chat',
-                                    describe: `对话(${options.model})`
-                                });
-                                // 计费
-                                isFeeCalculated = true;
-                                // 设置对话结束标志位为true
-                                isConversationEnded = true;
-                            }
                         }
                     }
                 }
@@ -891,6 +801,63 @@ router.post('/chat/completions', async (req, res) => {
     res.status(chat.status).json(data);
 });
 
+
+/**
+ * 回答结束的异步逻辑
+ * @param {*} oldUserMessageId 
+ * @param {*} userMessageInfo 
+ * @param {*} assistantInfo 
+ * @param {*} options
+ * @param {*} vipExpireTime 
+ * @param {*} svipExpireTime 
+ * @param {*} todayTime 
+ * @param {*} aiRatioInfo 
+ * @param {*} user_id 
+ * @param {*} ip 
+ */
+async function handleFeeCalculation(oldUserMessageId, userMessageInfo, assistantInfo, options, vipExpireTime, svipExpireTime, todayTime, aiRatioInfo, user_id, ip) {
+    let ratio;
+    if (oldUserMessageId === '') {
+        models_1.messageModel.addMessages([assistantInfo]);
+    } else {
+        models_1.messageModel.addMessages([userMessageInfo, assistantInfo]);
+    }
+    if (options.model.includes('gpt-4') && svipExpireTime < todayTime) {
+        ratio = Number(aiRatioInfo.ai4_ratio);
+        if (options.model.includes('32k')) {
+            ratio = Number(aiRatioInfo.ai4_32k_ratio);
+        }
+        if (options.model.includes('vision')) {
+            ratio = Number(aiRatioInfo.ai4_vision_ratio);
+        }
+    } else if (options.model.includes('gpt-3') && vipExpireTime < todayTime && svipExpireTime < todayTime) {
+        ratio = Number(aiRatioInfo.ai3_ratio);
+        if (options.model.includes('16k')) {
+            ratio = Number(aiRatioInfo.ai3_16k_ratio);
+        }
+    }
+    models_1.userModel.updataUserVIP({
+        id: user_id,
+        type: 'integral',
+        value: ratio,
+        operate: 'decrement'
+    });
+    const turnoverId = (0, utils_1.generateNowflakeId)(1)();
+    models_1.turnoverModel.addTurnover({
+        id: turnoverId,
+        user_id,
+        describe: `对话(${options.model})`,
+        value: `-${ratio}积分`
+    });
+    models_1.actionModel.addAction({
+        user_id,
+        id: (0, utils_1.generateNowflakeId)(23)(),
+        ip,
+        type: 'chat',
+        describe: `对话(${options.model})`
+    });
+}
+
 //创建room
 router.post('/roomcreate', async (req, res) => {
     const user_id = req?.user_id;
@@ -901,14 +868,13 @@ router.post('/roomcreate', async (req, res) => {
     const { title, roomId } = req.body;
     const id = (0, utils_1.generateNowflakeId)(1)();
     const insertRoomData = {
-        id : id,
-        room_id : roomId,
+        id: id,
+        room_id: roomId,
         status: 0,
-        title : title,
+        title: title,
         user_id: user_id,
     };
     const addRes = await models_1.roomModel.addRoom(insertRoomData);
-    console.log('room create---', addRes)
     res.json((0, utils_1.httpBody)(0, addRes, '创建room成功'));
 });
 
@@ -1368,7 +1334,7 @@ router.all('/pay/notify', async (req, res, next) => {
                 res.json('fail');
                 return;
             }
-            if(req.query?.pid === '1007'){
+            if (req.query?.pid === '1007') {
                 const { payment_id } = JSON.parse(decodeURIComponent(req.query?.param));
                 const isCheck = await checkNotifySign(payment_id, req.query, req.query?.channel);
                 if (!isCheck) {

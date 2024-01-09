@@ -9,10 +9,11 @@ const config_1 = tslib_1.__importDefault(require("../config"));
 const sequelizeExample = new sequelize_1.Sequelize({
     ...config_1.default.getConfig('mysql_config'),
     // dialectModule: mysql2_1.default,
-    logging: (sql, queryObject) => {
-        console.log('sql: ',sql)
-        // console.log('sql: ',sql, '\n sql where:', queryObject.where ?? '', '\n sql find: ',  queryObject.find ?? '');
+    logging: (sql, time) => {
+        console.log(sql,'cost:', time, 'ms')
     },
+    benchmark: () => {
+    }
 });
 exports.sequelizeExample = sequelizeExample;
 const initMysql = async () => {

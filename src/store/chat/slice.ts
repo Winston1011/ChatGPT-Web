@@ -160,15 +160,21 @@ const chatStore = create<ChatState>()(
                 }),
             setChatInfo: (id, data, info) =>
                 set((state: ChatState) => {
+                    let roomUpdateFlag = false;
+                    if (data?.role == 'user') {
+                        roomUpdateFlag = true;
+                    }
                     const newChats = state.chats.map((item) => {
                         if (item.id === id) {
                             const name = item.data.length <= 0 && data?.text ? data.text : item.name
-
+                            const truncatedName = name.length > 50 ? name.substring(0, 50) : name;
                             // 更新room表title为当前name
-                            postRoomUpdateTitle({title: item.name ?? 'New Chat', roomId: id.toString()})
-                                .then((res) => {
-                                    if (res.code) return
-                                })
+                            if (roomUpdateFlag) {
+                                postRoomUpdateTitle({ title: truncatedName ?? 'New Chat', roomId: id.toString() })
+                                    .then((res) => {
+                                        if (res.code) return
+                                    })
+                            }
                             return {
                                 ...item,
                                 name,
