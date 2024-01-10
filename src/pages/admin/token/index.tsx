@@ -1,44 +1,12 @@
 import { getAdminTokens, delAdminToken, putAdminToken, postAdminToken, postAdminTokenCheck } from '@/request/adminApi';
+import configStore from '@/store/config/slice';
 import { TokenInfo } from '@/types/admin';
 import { ActionType, ModalForm, ProColumns, ProFormGroup, ProFormRadio, ProFormSelect, ProFormText } from '@ant-design/pro-components';
 import { ProTable } from '@ant-design/pro-components';
 import { Button, Form, Tag, message } from 'antd';
 import { useRef, useState } from 'react';
 
-const modelsAll = [
-    {
-        label: 'gpt-4',
-        value: 'gpt-4'
-    },
-    {
-        label: 'gpt-4-0613',
-        value: 'gpt-4-0613'
-    },
-    {
-        label: 'gpt-4-32k',
-        value: 'gpt-4-32k'
-    },
-    {
-        label: 'gpt-3.5-turbo',
-        value: 'gpt-3.5-turbo'
-    },
-    {
-        label: 'gpt-3.5-turbo-16k',
-        value: 'gpt-3.5-turbo-16k'
-    },
-    {
-        label: 'gpt-3.5-turbo-16k-0613',
-        value: 'gpt-3.5-turbo-16k-0613'
-    },
-    {
-        label: 'DALL·E3绘画',
-        value: 'dall-e-3'
-    },
-    {
-        label: 'GPT-4-Vision',
-        value: 'gpt-4-vision-preview'
-    },
-]
+const modelsAll = configStore.getState().models;
 
 function TokenPage() {
 

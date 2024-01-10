@@ -33,11 +33,22 @@ router.get('/config', async (req, res, next) => {
     const notifications = notification.rows.sort((a, b) => {
         return a.sort - b.sort;
     });
+    // 获取AI模型配置字符串
+    let ai_models = (await models_1.configModel.getKeyConfig('ai_models')).value;
+    // 尝试解析AI模型配置为对象
+    try {
+        ai_models = JSON.parse(ai_models);
+    } catch (error) {
+        console.error('Error parsing ai_models:', error);
+        // 如果解析失败，返回默认的AI模型配置或错误信息
+        ai_models = { error: 'Failed to parse AI models configuration.' };
+    }
     res.json((0, utils_1.httpBody)(0, {
         shop_introduce,
         user_introduce,
         invite_introduce,
-        notifications: notifications
+        notifications: notifications,
+        ai_models
     }));
 });
 // 发送验证码
@@ -796,9 +807,12 @@ router.post('/chat/completions', async (req, res) => {
         });
         chat.body?.pipe(jsonStream).pipe(res);
         return;
+    } else {
+        const data = await chat.json();
+        res.status(chat.status).json((0, utils_1.httpBody)(0, data?.error?.message ?? '未知错误'));
+        return;
     }
-    const data = await chat.json();
-    res.status(chat.status).json(data);
+
 });
 
 

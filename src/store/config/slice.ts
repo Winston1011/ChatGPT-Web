@@ -32,40 +32,7 @@ const configStore = create<ConfigState>()(
       shop_introduce: '',
       user_introduce: '',
       invite_introduce: '',
-      models: [
-        {
-          label: 'GPT-3.5',
-          value: 'gpt-3.5-turbo'
-        },
-        {
-          label: 'GPT-3.5-turbo-16k',
-          value: 'gpt-3.5-turbo-16k'
-        },
-        {
-          label: 'GPT-3.5-turbo-16k-0613',
-          value: 'gpt-3.5-turbo-16k-0613'
-        },
-        {
-          label: 'GPT-4',
-          value: 'gpt-4'
-        },
-        {
-          label: 'GPT-4-0613',
-          value: 'gpt-4-0613'
-        },
-        {
-          label: 'GPT-4-32K',
-          value: 'gpt-4-32k'
-        },
-        {
-          label: '识图',
-          value: 'gpt-4-vision-preview'
-        },
-        {
-          label: '画图',
-          value: 'dall-e-3'
-        },
-      ],
+      models: [],
       config: {
         model: 'gpt-3.5-turbo',
         temperature: 0,
@@ -78,7 +45,22 @@ const configStore = create<ConfigState>()(
         set((state: ConfigState) => ({
           config: { ...state.config, ...config }
         })),
-      replaceData: (data) => set((state: ConfigState) => ({ ...state, ...data }))
+      replaceData: (data) => set((state: ConfigState) => {
+        // 更新models数组，如果ai_models存在于data中
+        const newModels = data.ai_models?.models ? data.ai_models.models : state.models;
+        // 更新config中的model，如果ai_models.default存在于data中
+        const newModel = data.ai_models?.default ? data.ai_models.default : state.config.model;
+        // 返回更新后的状态
+        return {
+          ...state,
+          models: newModels,
+          config: {
+            ...state.config,
+            model: newModel
+          },
+          ...data
+        };
+      })
     }),
     {
       name: 'config_storage', // name of item in the storage (must be unique)

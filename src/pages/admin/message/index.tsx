@@ -1,9 +1,10 @@
 import { getAdminMessages } from '@/request/adminApi';
+import configStore from '@/store/config/slice';
 import { MessageInfo } from '@/types/admin';
 import { ActionType, ProColumns } from '@ant-design/pro-components';
 import { ProTable } from '@ant-design/pro-components';
 import { Button, Col, DatePicker, Form, Input, InputNumber, Row, Select, Space, Tag } from 'antd';
-import { useRef} from 'react';
+import { useRef } from 'react';
 
 function MessagePage() {
 
@@ -33,18 +34,18 @@ function MessagePage() {
             title: '角色',
             dataIndex: 'role',
             width: 130,
-            render: (_, data)=><Tag color={data.role.includes('user') ? 'cyan' : 'green'}>{data.role}</Tag>
+            render: (_, data) => <Tag color={data.role.includes('user') ? 'cyan' : 'green'}>{data.role}</Tag>
         },
         {
             title: '模型',
             dataIndex: 'model',
             width: 180,
-            render: (_, data)=><Tag color={data.model.includes('gpt-4') ? 'purple' : ''}>{data.model}</Tag>
+            render: (_, data) => <Tag color={data.model.includes('gpt-4') ? 'purple' : ''}>{data.model}</Tag>
         },
         {
             title: '会话ID',
             dataIndex: 'parent_message_id',
-            render: (_, data)=><Tag>{data.parent_message_id}</Tag>
+            render: (_, data) => <Tag>{data.parent_message_id}</Tag>
         },
         {
             title: '状态值',
@@ -68,51 +69,51 @@ function MessagePage() {
     const handleSearch = () => {
         const searchValues = searchForm.getFieldsValue()
         tableActionRef.current?.reloadAndRest?.()
-      }
+    }
+    const modelsAll = configStore.getState().models;
 
     return (
         <div>
             <Form form={searchForm} onFinish={handleSearch}>
-        <Row gutter={24}>
-          <Col>
-            <Form.Item name="account" label = "账户">
-              <Input placeholder="输入账号,支持关键词" />
-            </Form.Item>
-          </Col>
-          <Col>
-            <Form.Item name="createTimeRange" label="消息产生时间">
-              <DatePicker.RangePicker
-                placeholder={['起始时间', '结束时间']}
-                allowClear
-              />
-            </Form.Item>
-          </Col>
-          <Col>
-            <Form.Item name="modelName" label="模型">
-                <Select placeholder="选择模型名称"
-                mode="multiple"
-                allowClear
-                style={{ width: '200px' }}
-                popupMatchSelectWidth={false}
-                >
-                <Select.Option value="gpt-3.5-turbo">gpt-3.5-turbo</Select.Option>
-                <Select.Option value="gpt-3.5-turbo-16k">gpt-3.5-turbo-16k</Select.Option>
-                <Select.Option value="gpt-3.5-turbo-16k-0613">gpt-3.5-turbo-16k-0613</Select.Option>
-                <Select.Option value="gpt-4">gpt-4</Select.Option>
-                <Select.Option value="gpt-4-0613">gpt-4-0613</Select.Option>
-                <Select.Option value="gpt-4-32k">gpt-4-32k</Select.Option>
-                </Select>
-            </Form.Item>
-          </Col>
+                <Row gutter={24}>
+                    <Col>
+                        <Form.Item name="account" label="账户">
+                            <Input placeholder="输入账号,支持关键词" />
+                        </Form.Item>
+                    </Col>
+                    <Col>
+                        <Form.Item name="createTimeRange" label="消息产生时间">
+                            <DatePicker.RangePicker
+                                placeholder={['起始时间', '结束时间']}
+                                allowClear
+                            />
+                        </Form.Item>
+                    </Col>
+                    <Col>
+                        <Form.Item name="modelName" label="模型">
+                            <Select placeholder="选择模型名称"
+                                mode="multiple"
+                                allowClear
+                                style={{ width: '200px' }}
+                                popupMatchSelectWidth={false}
+                            >
+                                {modelsAll.map((modelItem) => (
+                                    <Select.Option key={modelItem.value} value={modelItem.value}>
+                                        {modelItem.value}
+                                    </Select.Option>
+                                ))}
+                            </Select>
+                        </Form.Item>
+                    </Col>
 
-          <Col>
-            <Form.Item>
-              <Button type="primary" htmlType="submit">
-                确认
-              </Button>
-            </Form.Item>
-          </Col>
-        </Row>
+                    <Col>
+                        <Form.Item>
+                            <Button type="primary" htmlType="submit">
+                                确认
+                            </Button>
+                        </Form.Item>
+                    </Col>
+                </Row>
             </Form>
             <ProTable
                 actionRef={tableActionRef}
@@ -136,13 +137,13 @@ function MessagePage() {
                         page: queryParams.page || 1,
                         page_size: queryParams.page_size || 10,
                         account: queryParams.account ?? '',
-                        createTimeStart: (queryParams.createTimeRange !== undefined && queryParams.createTimeRange !== null ) ? 
+                        createTimeStart: (queryParams.createTimeRange !== undefined && queryParams.createTimeRange !== null) ?
                             `${queryParams.createTimeRange[0].$y}-${queryParams.createTimeRange[0].$M + 1}-${queryParams.createTimeRange[0].$D}`
-                            : '', 
-                        createTimeEnd: (queryParams.createTimeRange !== undefined && queryParams.createTimeRange !== null ) ? 
+                            : '',
+                        createTimeEnd: (queryParams.createTimeRange !== undefined && queryParams.createTimeRange !== null) ?
                             `${queryParams.createTimeRange[1].$y}-${queryParams.createTimeRange[1].$M + 1}-${queryParams.createTimeRange[1].$D}`
                             : '',
-                        modelName: (queryParams.modelName !== undefined)? queryParams.modelName:[],
+                        modelName: (queryParams.modelName !== undefined) ? queryParams.modelName : [],
                     });
                     return Promise.resolve({
                         data: res.data.rows,

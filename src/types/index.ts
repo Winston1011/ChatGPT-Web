@@ -31,7 +31,16 @@ export interface ResponseLoginData {
 export interface ResponseConfigData {
   shop_introduce: string
   user_introduce: string
-  notifications: NotificationInfo[]
+  notifications: NotificationInfo[],
+  ai_models: AIModels,
+}
+
+export interface AIModels {
+  models: Array<{
+    label: string
+    value: string
+  }>
+  default: string
 }
 
 export interface ChatGptConfig {
