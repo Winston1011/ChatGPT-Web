@@ -163,7 +163,7 @@ function ChatMessage({
   }
 
   function renderContent() {
-    console.log('Rendering content, isImage:', isImage, 'imageUrl:', imageUrl);
+    // console.log('Rendering content:', content, 'isImage:', isImage, 'imageUrl:', imageUrl,);
 
     // 如果有 AI 生成的图片，则直接返回该图片
     if (isImage && imageUrl) {
@@ -286,8 +286,8 @@ function ChatMessage({
             styles.chatMessage_content_text,
             position === 'right' ? styles.right : styles.left
           ])}
-        >
-          {status === 'loading' ? (
+        >    
+          {(status === 'loading' || (status === 'pass' && content?.length <= 0)) ? (
             // <OpenAiLogo rotate />
             <div>
               <div>

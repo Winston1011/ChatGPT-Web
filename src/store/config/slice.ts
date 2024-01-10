@@ -49,15 +49,15 @@ const configStore = create<ConfigState>()(
         // 更新models数组，如果ai_models存在于data中
         const newModels = data.ai_models?.models ? data.ai_models.models : state.models;
         // 更新config中的model，如果ai_models.default存在于data中
-        const newModel = data.ai_models?.default ? data.ai_models.default : state.config.model;
+        // const newModel = data.ai_models?.default ? data.ai_models.default : state.config.model;
         // 返回更新后的状态
         return {
           ...state,
           models: newModels,
-          config: {
-            ...state.config,
-            model: newModel
-          },
+          // config: {
+          //   ...state.config,
+          //   model: newModel
+          // },
           ...data
         };
       })

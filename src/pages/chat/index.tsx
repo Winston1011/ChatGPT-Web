@@ -210,6 +210,14 @@ function ChatPage() {
     )
   }
 
+  // 警告：不推荐在实际应用中使用这种方法，因为它会阻塞主线程
+  async function delayMicroseconds(us: number) {
+    const start = performance.now();
+    while ((performance.now() - start) < (us / 1000)) {
+      // 忙等
+    }
+  }
+
 
   // 对接服务端方法
   async function serverChatCompletions({
@@ -268,54 +276,130 @@ function ChatPage() {
       return
     }
     const reader = response.body?.getReader?.()
-    let allContent = ''
+    // let allContent = ''
+    // while (true) {
+    //   const { done, value } = (await reader?.read()) || {}
+    //   if (done) {
+    //     fetchController?.abort()
+    //     setFetchController(null)
+    //     break
+    //   }
+    //   // 将获取到的数据片段显示在屏幕上
+    //   const text = new TextDecoder('utf-8').decode(value)
+    //   const texts = text
+    //     .split('\n')
+    //     .filter((item) => item !== undefined && item !== null && item.trim() !== '')
+    //     .map((d) => {
+    //       return JSON.parse(d)
+    //     })
+    //   for (let i = 0; i < texts.length; i++) {
+    //     const { dateTime, role, content, segment } = texts[i]
+    //     // 打印出每一条消息
+    //     console.log(dateTime, role, content, segment)
+    //     allContent += content ? content : ''
+    //     if (segment === 'stop') {
+    //       setFetchController(null)
+    //       setChatDataInfo(selectChatId, userMessageId, {
+    //         status: 'pass'
+    //       })
+    //       setChatDataInfo(selectChatId, assistantMessageId, {
+    //         text: allContent,
+    //         dateTime,
+    //         status: 'pass'
+    //       })
+    //       break
+    //     }
+
+    //     if (segment === 'start') {
+    //       setChatDataInfo(selectChatId, userMessageId, {
+    //         status: 'pass'
+    //       })
+    //       setChatDataInfo(selectChatId, assistantMessageId, {
+    //         text: allContent,
+    //         dateTime,
+    //         status: 'loading',
+    //         role,
+    //         requestOptions
+    //       })
+    //     }
+    //     if (segment === 'text') {
+    //       setChatDataInfo(selectChatId, assistantMessageId, {
+    //         text: allContent,
+    //         dateTime,
+    //         status: 'pass'
+    //       })
+    //     }
+    //   }
+    //   scrollToBottomIfAtBottom()
+    // }
+    
+    let partialContent = '';
+    let tmpAllContent = '';
     while (true) {
-      const { done, value } = (await reader?.read()) || {}
+      const { done, value } = (await reader?.read()) || {};
       if (done) {
-        fetchController?.abort()
-        setFetchController(null)
-        break
+        fetchController?.abort();
+        setFetchController(null);
+        break;
       }
       // 将获取到的数据片段显示在屏幕上
-      const text = new TextDecoder('utf-8').decode(value)
-      const texts = handleChatData(text)
-      for (let i = 0; i < texts.length; i++) {
-        const { dateTime, role, content, segment } = texts[i]
-        allContent += content ? content : ''
+      let text = new TextDecoder('utf-8').decode(value, { stream: true });
+      partialContent += text;
+
+      // 分割并处理每一条消息
+      let messages = partialContent.split('\n\n');
+      for (let i = 0; i < messages.length - 1; i++) {
+        let messageData = JSON.parse(messages[i]);
+        const { dateTime, role, content, segment } = messageData;
         if (segment === 'stop') {
-          setFetchController(null)
+          setFetchController(null);
           setChatDataInfo(selectChatId, userMessageId, {
             status: 'pass'
-          })
+          });
           setChatDataInfo(selectChatId, assistantMessageId, {
-            text: allContent,
+            text: tmpAllContent,
             dateTime,
             status: 'pass'
-          })
-          break
+          });
+          break;
         }
 
         if (segment === 'start') {
+          // 逐个字符更新UI
+          for (let char of content) {
+            tmpAllContent += char;
+            // await delayMicroseconds(1);
+            // await new Promise(resolve => setTimeout(resolve, 0));
+          }
           setChatDataInfo(selectChatId, userMessageId, {
             status: 'pass'
           })
           setChatDataInfo(selectChatId, assistantMessageId, {
-            text: allContent,
+            text: tmpAllContent,
             dateTime,
             status: 'loading',
-            role,
-            requestOptions
-          })
+            role
+          });
         }
+
         if (segment === 'text') {
+          // 逐个字符更新UI
+          for (let char of content) {
+            tmpAllContent += char;
+            // await delayMicroseconds(1);
+            await new Promise(resolve => setTimeout(resolve, 1));
+          }
           setChatDataInfo(selectChatId, assistantMessageId, {
-            text: allContent,
+            text: tmpAllContent,
             dateTime,
             status: 'pass'
           })
         }
       }
-      scrollToBottomIfAtBottom()
+      // 保留未完整接收的部分消息
+      partialContent = messages[messages.length - 1];
+
+      scrollToBottomIfAtBottom();
     }
   }
 
