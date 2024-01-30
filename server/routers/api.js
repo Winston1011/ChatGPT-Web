@@ -162,7 +162,7 @@ router.post('/login', async (req, res) => {
                     ip,
                     invite_code,
                     nickname: '',
-                    avatar: 'https://image.lightai.io/icon/header.png',
+                    avatar: 'https://minioapi.nonezero.top/dz-minio-os/gpt-3.5-icon.png',
                     status: 1,
                     role: 'user',
                     password: md5Password ?? (0, utils_1.generateMd5)((0, utils_1.generateMd5)((0, utils_1.generateUUID)() + Date.now().toString())),

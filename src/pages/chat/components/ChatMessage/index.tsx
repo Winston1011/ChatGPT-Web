@@ -287,7 +287,7 @@ function ChatMessage({
             position === 'right' ? styles.right : styles.left
           ])}
         >    
-          {(status === 'loading' || (status === 'pass' && content?.length <= 0)) ? (
+          {(status === 'loading' || (status === 'pass' && content?.length <= 0 && imageUrl === undefined)) ? (
             // <OpenAiLogo rotate />
             <div>
               <div>
