@@ -8,25 +8,31 @@ import MarkdownIt from 'markdown-it'
 import mdKatex from '@traptitech/markdown-it-katex'
 import mila from 'markdown-it-link-attributes'
 import hljs from 'highlight.js'
-import { CopyOutlined, DeleteOutlined, LoadingOutlined, MoreOutlined, RedoOutlined } from '@ant-design/icons'
+import {
+  CopyOutlined,
+  DeleteOutlined,
+  LoadingOutlined,
+  MoreOutlined,
+  RedoOutlined
+} from '@ant-design/icons'
 import { isUrl } from '@ant-design/pro-components'
 
 const dropdownItems = [
   {
     icon: <CopyOutlined />,
     label: '复制',
-    key: 'copyout',
+    key: 'copyout'
   },
   {
     icon: <RedoOutlined />,
     label: '重试',
-    key: 'refurbish',
+    key: 'refurbish'
   },
   {
     icon: <DeleteOutlined />,
     label: '删除',
-    key: 'delete',
-  },
+    key: 'delete'
+  }
 ]
 
 function screenDropdownItems(status: string, position: 'left' | 'right') {
@@ -38,8 +44,8 @@ function screenDropdownItems(status: string, position: 'left' | 'right') {
     if (position !== 'left' && item.key === 'refurbish') {
       return false
     }
-    return true;
-  });
+    return true
+  })
 
   return [...newList]
 }
@@ -61,9 +67,9 @@ function ChatMessage({
   status: 'pass' | 'loading' | 'error' | string
   time: string
   model?: string
-  isImage?: boolean,
-  imageUrl?: string,
-  uploadedImageUrl?: string,
+  isImage?: boolean
+  imageUrl?: string
+  uploadedImageUrl?: string
   onDelChatMessage?: () => void
   onRefurbishChatMessage?: () => void
 }) {
@@ -74,25 +80,24 @@ function ChatMessage({
     html: true,
     linkify: true,
     highlight(code, language) {
-      const validLang = !!(language && hljs.getLanguage(language));
+      const validLang = !!(language && hljs.getLanguage(language))
       if (validLang) {
-        const lang = language ?? '';
-        return highlightBlock(hljs.highlight(code, { language: lang }).value, lang, code);
+        const lang = language ?? ''
+        return highlightBlock(hljs.highlight(code, { language: lang }).value, lang, code)
       }
-      return highlightBlock(hljs.highlightAuto(code).value, '', code);
+      return highlightBlock(hljs.highlightAuto(code).value, '', code)
     }
-  });
+  })
 
   mdi.use(mila, { attrs: { target: '_blank', rel: 'noopener' } })
   mdi.use(mdKatex, { blockClass: 'katex-block', errorColor: ' #cc0000', output: 'mathml' })
 
-
   useEffect(() => {
-    addCopyEvents();
+    addCopyEvents()
     return () => {
-      removeCopyEvents();
-    };
-  }, [markdownBodyRef.current]);
+      removeCopyEvents()
+    }
+  }, [markdownBodyRef.current])
 
   function highlightBlock(str: string, lang: string, code: string) {
     return `<pre class="code-block-wrapper"><div class="code-block-header"><span class="code-block-header__lang">${lang}</span><span class="code-block-header__copy">复制代码</span></div><code class="hljs code-block-body ${lang}">${str}</code></pre>`
@@ -118,10 +123,10 @@ function ChatMessage({
 
   function addCopyEvents() {
     if (markdownBodyRef.current) {
-      const copyBtn = markdownBodyRef.current.querySelectorAll('.code-block-header__copy');
+      const copyBtn = markdownBodyRef.current.querySelectorAll('.code-block-header__copy')
       copyBtn.forEach((btn) => {
         btn.addEventListener('click', () => {
-          const code = btn.parentElement?.nextElementSibling?.textContent;
+          const code = btn.parentElement?.nextElementSibling?.textContent
           if (code) {
             copyToClipboard(code)
               .then(() => {
@@ -129,18 +134,18 @@ function ChatMessage({
                   key: copyMessageKey,
                   type: 'success',
                   content: '复制成功'
-                });
+                })
               })
               .catch(() => {
                 message.open({
                   key: copyMessageKey,
                   type: 'error',
                   content: '复制失败'
-                });
-              });
+                })
+              })
           }
-        });
-      });
+        })
+      })
     }
   }
 
@@ -157,9 +162,9 @@ function ChatMessage({
 
   function renderLoadingText() {
     if (model === 'dall-e-3') {
-      return '绘制中，请稍候...';
+      return '绘制中，请稍候...'
     }
-    return 'AI 思考中...';
+    return 'AI 思考中...'
   }
 
   function renderContent() {
@@ -167,38 +172,58 @@ function ChatMessage({
 
     // 如果有 AI 生成的图片，则直接返回该图片
     if (isImage && imageUrl) {
-      return <Image src={imageUrl} alt="Generated Content" style={{ maxHeight: '40vh' }} />;
+      return <Image src={imageUrl} alt="Generated Content" style={{ maxHeight: '40vh' }} />
     }
 
     // 如果有上传的图片 URL，则准备图片元素
-    const imageElement = uploadedImageUrl ? <Image src={uploadedImageUrl} alt="Uploaded Content" style={{ maxHeight: '40vh' }} /> : null;
+    const imageElement = uploadedImageUrl ? (
+      <Image src={uploadedImageUrl} alt="Uploaded Content" style={{ maxHeight: '40vh' }} />
+    ) : null
 
+    // 如果content未定义，则直接返回图片元素
+    if (content === undefined) {
+      return imageElement
+    }
     // 判断content是否为URL链接
     const isContentUrl = isUrl(content)
     if (isContentUrl) {
-      return <Image src={content} alt="Generated Content" style={{ maxHeight: '40vh' }} />;
+      return <Image src={content} alt="Generated Content" style={{ maxHeight: '40vh' }} />
     }
 
     // 判断content是否问文本+URL
-    const splitStr = content.split("<=>") ?? '';
-    const contentStr = splitStr[0] ?? '';
-    const imgUrl = splitStr[1] ?? '';
+    const splitStr = content.split('<=>') ?? ''
+    const contentStr = splitStr[0] ?? ''
+    const imgUrl = splitStr[1] ?? ''
     if (contentStr.length > 0 && imgUrl.length > 0) {
       // 如果有图片 URL，则准备图片元素
-      const imgElement = imgUrl ? <Image src={imgUrl} alt="Ask Image Content" style={{ maxHeight: '40vh' }} /> : null;
+      const imgElement = imgUrl ? (
+        <Image src={imgUrl} alt="Ask Image Content" style={{ maxHeight: '40vh' }} />
+      ) : null
       // 如果有文本内容，则准备文本元素
-      const contentStrElement = contentStr ? <div ref={markdownBodyRef} className={'markdown-body'} dangerouslySetInnerHTML={{ __html: mdi.render(contentStr) }} /> : null;
+      const contentStrElement = contentStr ? (
+        <div
+          ref={markdownBodyRef}
+          className={'markdown-body'}
+          dangerouslySetInnerHTML={{ __html: mdi.render(contentStr) }}
+        />
+      ) : null
       // 返回图片和文本的组合
       return (
         <>
           {contentStrElement}
           {imgElement}
         </>
-      );
+      )
     }
 
     // 如果有文本内容，则准备文本元素
-    const textElement = content ? <div ref={markdownBodyRef} className={'markdown-body'} dangerouslySetInnerHTML={{ __html: mdi.render(content) }} /> : null;
+    const textElement = content ? (
+      <div
+        ref={markdownBodyRef}
+        className={'markdown-body'}
+        dangerouslySetInnerHTML={{ __html: mdi.render(content) }}
+      />
+    ) : null
 
     // 返回图片和文本的组合
     return (
@@ -206,22 +231,19 @@ function ChatMessage({
         {imageElement}
         {textElement}
       </>
-    );
+    )
   }
 
   const renderText = useMemo(() => {
     const value = content || ''
     if (position === 'right') {
       return (
-        <div
-          ref={markdownBodyRef}
-          className="markdown-body"
-        >
+        <div ref={markdownBodyRef} className="markdown-body">
           {value}
         </div>
-      );
+      )
     }
-    const renderMdHtml = mdi.render(value);
+    const renderMdHtml = mdi.render(value)
     return (
       <div
         ref={markdownBodyRef}
@@ -270,7 +292,10 @@ function ChatMessage({
       {position === 'left' &&
         chatAvatar({
           style: { marginRight: 8 },
-          icon: model && model.indexOf('gpt-4') !== -1 ? 'https://minioapi.nonezero.top/dz-minio-os/gpt-4-icon.png' : 'https://minioapi.nonezero.top/dz-minio-os/gpt-3.5-icon.png'
+          icon:
+            model && model.indexOf('gpt-4') !== -1
+              ? 'https://minioapi.nonezero.top/dz-minio-os/gpt-4-icon.png'
+              : 'https://minioapi.nonezero.top/dz-minio-os/gpt-3.5-icon.png'
         })}
       <div className={styles.chatMessage_content}>
         <span
@@ -286,8 +311,11 @@ function ChatMessage({
             styles.chatMessage_content_text,
             position === 'right' ? styles.right : styles.left
           ])}
-        >    
-          {(status === 'loading' || (status === 'pass' && content?.length <= 0 && imageUrl === undefined)) ? (
+        >
+          {status === 'loading' ||
+          (status === 'pass' &&
+            (content === undefined || content?.length <= 0) &&
+            imageUrl === undefined) ? (
             // <OpenAiLogo rotate />
             <div>
               <div>
@@ -299,16 +327,17 @@ function ChatMessage({
             renderContent()
             // renderText
           )}
-          <div className={styles.chatMessage_content_operate}
+          <div
+            className={styles.chatMessage_content_operate}
             style={{
               left: position === 'right' ? -20 : 'none',
-              right: position === 'left' ? -20 : 'none',
+              right: position === 'left' ? -20 : 'none'
             }}
           >
             <Dropdown
               placement="topRight"
               arrow={{
-                pointAtCenter: true,
+                pointAtCenter: true
               }}
               destroyPopupOnHide
               trigger={['click', 'hover']}
@@ -325,9 +354,9 @@ function ChatMessage({
                   }
 
                   if (key === 'copyout' && content) {
-                    onCopyOut(content);
+                    onCopyOut(content)
                   }
-                },
+                }
               }}
             >
               <div className={styles.chatMessage_content_operate_icon}>
